@@ -1,0 +1,16 @@
+[package]
+name = "sm2"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+num-traits = "0.2.14"
+num-derive = "0.3.3"
+rand = "0.8.4"
+thiserror = "1.0.26"
+xplm = { git = "https://github.com/samcrow/rust-xplm.git" }
+xplm-sys = "0.4.0"
+
+[lib]
+name = "sm2"
+crate-type = ["dylib"]
