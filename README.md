@@ -3,11 +3,9 @@ This repository contains the software
 
 # Prerequisities
 ## Rust
-___
 To install Rust toolchain follow the instructions on https://rustup.rs
 
 ## Visual Studio Code
-___
 To install vscode follow the instructions on https://code.visualstudio.com
 
 Install thr following vscode plugins: _[Better TOML](https://marketplace.visualstudio.com/items?itemName=bungcip.better-toml)_,
