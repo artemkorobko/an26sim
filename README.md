@@ -8,7 +8,7 @@ To install Rust toolchain follow the instructions on https://rustup.rs
 ## Visual Studio Code
 To install vscode follow the instructions on https://code.visualstudio.com
 
-Install thr following vscode plugins: _[Better TOML](https://marketplace.visualstudio.com/items?itemName=bungcip.better-toml)_,
+Install thr following vscode plugins: [Better TOML](https://marketplace.visualstudio.com/items?itemName=bungcip.better-toml),
 [CodeLLDB](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb),
 [crates](https://marketplace.visualstudio.com/items?itemName=serayuzgur.crates),
 [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=matklad.rust-analyzer),
@@ -17,4 +17,4 @@ Install thr following vscode plugins: _[Better TOML](https://marketplace.visuals
 [GitLens](https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens).
 
 Optional plugins: [Tabnine AI Code Completion](https://marketplace.visualstudio.com/items?itemName=TabNine.tabnine-vscode),
-[Ayu Theme](https://marketplace.visualstudio.com/items?itemName=teabyii.ayu).
+[Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker).

@@ -11,6 +11,7 @@ use crate::{
         dataref::collection::DataRefs,
         debouncer::XPlaneParamDebouncer,
         inspector::window::InspectorWindow,
+        interpolator::XPlaneParamInterpolator,
         mapper::{SM2MXPlaneMapper, XPlaneSM2MMapper},
         menu::{instance::PluginMenu, item::MenuItem},
         params::XPlaneInputParams,
@@ -86,7 +87,8 @@ impl Controller {
         fill_param_generator(&mut generator, &params);
         Chain::supply(generator)
             .map(SM2MXPlaneMapper::default())
-            .map(XPlaneParamDebouncer::new(
+            .map(XPlaneParamDebouncer::new())
+            .map(XPlaneParamInterpolator::new(
                 datarefs.as_input(),
                 self.delta_supplier.clone(),
             ))

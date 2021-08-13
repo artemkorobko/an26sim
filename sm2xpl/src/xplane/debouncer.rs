@@ -1,9 +1,6 @@
-use std::{cell::RefCell, rc::Rc, time::Duration};
+use std::time::{Duration, Instant};
 
-use crate::{
-    common::chain::{Mapper, Supplier},
-    io::delta::DeltaTimeSupplier,
-};
+use crate::common::chain::Mapper;
 
 use super::{
     debouncers::{
@@ -14,26 +11,34 @@ use super::{
 };
 
 pub struct XPlaneParamDebouncer {
-    delta: Rc<RefCell<DeltaTimeSupplier>>,
-    params: DebouncedParams,
+    last_debounce: Instant,
+    params: Option<DebouncedParams>,
 }
 
 impl XPlaneParamDebouncer {
-    pub fn new(default: XPlaneInputParams, delta: Rc<RefCell<DeltaTimeSupplier>>) -> Self {
-        let mut params = DebouncedParams::default();
-        params.assign(default);
-        Self { delta, params }
+    pub fn new() -> Self {
+        Self {
+            last_debounce: Instant::now(),
+            params: None,
+        }
+    }
+
+    fn debounce(&mut self, target: XPlaneInputParams) -> XPlaneInputParams {
+        if let Some(params) = &mut self.params {
+            let delta = Instant::now().duration_since(self.last_debounce);
+            params.debounce(target, &delta)
+        } else {
+            let mut params = DebouncedParams::default();
+            let output = params.assign(target);
+            self.params = Some(params);
+            output
+        }
     }
 }
 
-impl Mapper<Option<XPlaneInputParams>, XPlaneInputParams> for XPlaneParamDebouncer {
-    fn map(&mut self, input: Option<XPlaneInputParams>) -> XPlaneInputParams {
-        let delta = self.delta.borrow_mut().supply();
-        if let Some(input) = input {
-            self.params.debounce(input, &delta)
-        } else {
-            self.params.integrate(&delta)
-        }
+impl Mapper<Option<XPlaneInputParams>, Option<XPlaneInputParams>> for XPlaneParamDebouncer {
+    fn map(&mut self, input: Option<XPlaneInputParams>) -> Option<XPlaneInputParams> {
+        input.map(|params| self.debounce(params))
     }
 }
 
