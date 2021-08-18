@@ -5,7 +5,7 @@ use xplm::debugln;
 use crate::{
     common::{
         chain::{Consumer, Supplier},
-        timer::TimeCounter,
+        timer::DeltaCounter,
     },
     io::delta::DeltaTimeSupplier,
 };
@@ -45,7 +45,7 @@ impl Consumer<XPlaneInputParams> for XPlaneDataRefUpdater {
 pub struct XPlaneInspectorUpdater {
     inspector: Rc<RefCell<InspectorWindow>>,
     delta: Rc<RefCell<DeltaTimeSupplier>>,
-    timer: TimeCounter,
+    timer: DeltaCounter,
 }
 
 impl XPlaneInspectorUpdater {
@@ -56,14 +56,14 @@ impl XPlaneInspectorUpdater {
         Self {
             inspector,
             delta,
-            timer: TimeCounter::new(Duration::from_millis(50)),
+            timer: DeltaCounter::immediate(Duration::from_millis(50)),
         }
     }
 
     fn should_update_inspector(&mut self) -> bool {
         if self.inspector.borrow().visible() {
             let delta = self.delta.borrow_mut().supply();
-            self.timer.count(&delta).is_some()
+            self.timer.count(&delta).is_elapsed()
         } else {
             false
         }

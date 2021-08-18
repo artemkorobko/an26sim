@@ -4,7 +4,7 @@ use num_traits::PrimInt;
 use rand::{distributions::uniform::SampleUniform, prelude::ThreadRng, Rng};
 use xplm::debugln;
 
-use crate::common::{chain::Supplier, timer::TimeCounter};
+use crate::common::{chain::Supplier, timer::DeltaCounter};
 
 use super::{delta::DeltaTimeSupplier, params::input::*};
 
@@ -13,7 +13,7 @@ const GEN_TIMEOUT: Duration = Duration::from_millis(50);
 pub struct USBParamGenerator {
     params: Vec<GeneratorType>,
     delta: Rc<RefCell<DeltaTimeSupplier>>,
-    timer: TimeCounter,
+    timer: DeltaCounter,
 }
 
 impl USBParamGenerator {
@@ -21,7 +21,7 @@ impl USBParamGenerator {
         Self {
             params: vec![GeneratorType::ConstU16(0); PARAMS_COUNT],
             delta,
-            timer: TimeCounter::new(GEN_TIMEOUT),
+            timer: DeltaCounter::immediate(GEN_TIMEOUT),
         }
     }
 
@@ -78,7 +78,7 @@ impl USBParamGenerator {
         Self {
             params,
             delta,
-            timer: TimeCounter::new(GEN_TIMEOUT),
+            timer: DeltaCounter::immediate(GEN_TIMEOUT),
         }
     }
 
@@ -158,7 +158,7 @@ impl USBParamGenerator {
     }
 
     fn can_supply(&mut self, delta: &Duration) -> bool {
-        self.timer.count(delta).is_some()
+        self.timer.count(delta).is_elapsed()
     }
 
     fn update(&mut self, delta: &Duration) {
@@ -225,7 +225,7 @@ struct Generator<T> {
     min: T,
     max: T,
     direction: Direction,
-    timer: TimeCounter,
+    timer: DeltaCounter,
     cnt: usize,
 }
 
@@ -237,13 +237,13 @@ impl<T: PrimInt + SampleUniform + std::fmt::Debug> Generator<T> {
             min,
             max,
             direction: Direction::Increase,
-            timer: TimeCounter::new(timeout),
+            timer: DeltaCounter::immediate(timeout),
             cnt: 0,
         }
     }
 
     fn can_calculate(&mut self, delta: &Duration) -> bool {
-        self.timer.count(delta).is_some()
+        self.timer.count(delta).is_elapsed()
     }
 
     fn should_bounce(&mut self, random: &mut ThreadRng) -> bool {
