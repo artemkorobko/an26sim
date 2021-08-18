@@ -27,3 +27,41 @@ macro_rules! impl_percent_for {
 
 impl_percent_for!(f32);
 impl_percent_for!(f64);
+
+mod test {
+    #[test]
+    fn should_get_f32_percent_from_value() {
+        let percent = super::Percent::percent_from_value(&0.0f32, -50.0f32, 50.0f32);
+        assert!(percent > 49.99f32 && percent < 50.01f32);
+    }
+
+    #[test]
+    fn should_get_f64_percent_from_value() {
+        let percent = super::Percent::percent_from_value(&0.0f64, -50.0f64, 50.0f64);
+        assert!(percent > 49.99f64 && percent < 50.01f64);
+    }
+
+    #[test]
+    fn should_get_f32_value_from_percent() {
+        let value = super::Percent::value_from_percent(&50.0f32, -50.0f32, 50.0f32);
+        assert!(value > -0.01f32 && value < 0.01f32);
+    }
+
+    #[test]
+    fn should_get_f64_value_from_percent() {
+        let value = super::Percent::value_from_percent(&50.0f64, -50.0f64, 50.0f64);
+        assert!(value > -0.01f64 && value < 0.01f64);
+    }
+
+    #[test]
+    fn should_scale_f32() {
+        let value = super::Percent::scale(&25.0f32, 0.0f32, 50.0f32, -100.0f32, -50.0f32);
+        assert!(value > -75.01f32 && value < -74.99f32);
+    }
+
+    #[test]
+    fn should_scale_f64() {
+        let value = super::Percent::scale(&25.0f64, 0.0f64, 50.0f64, -100.0f64, -50.0f64);
+        assert!(value > -75.01f64 && value < -74.99f64);
+    }
+}
