@@ -7,6 +7,14 @@ This is the plugin for the X-Plane 11 which manages X-Plane aircraft properties 
 cargo build --release
 ```
 
+### To test the plugin:
+- **For MacOS** copy `XPLM.framework` and `XPWidgets.framework` from the X-Plane SDK into the project root directory where `cargo.toml` is located.
+
+Run the following command
+```bash
+cargo test
+```
+
 ### To test the plugin inside XPlane 11 use the following command:
 For MacOs:
 ```bash
