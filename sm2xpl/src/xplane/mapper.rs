@@ -1,7 +1,7 @@
 use xplm::debugln;
 
 use crate::{
-    common::{bit::BitExt, chain::Mapper, percent::Percent},
+    common::{chain::Mapper, percent::Percent},
     io::{
         index::*,
         params::{input::InputParams, ParamResult},
@@ -55,10 +55,10 @@ impl SM2MXPlaneMapper {
         let val = (i.gear_right()?.reverse_bits() as f32).scale(0.0, 32767.0, 0.0, 1.0);
         o.gears.right = val;
         let val = i.lights()?.reverse_bits();
-        o.lights.landing = val.bit_test(0);
-        o.lights.navigation = val.bit_test(1);
-        o.lights.beacon = val.bit_test(2);
-        o.reset = i.reset()?.reverse_bits().bit_test(0);
+        o.lights.landing = bit_test(val, 0);
+        o.lights.navigation = bit_test(val, 1);
+        o.lights.beacon = bit_test(val, 2);
+        o.reset = bit_test(i.reset()?.reverse_bits(), 0);
         Ok(o)
     }
 }
@@ -114,16 +114,24 @@ impl Mapper<XPlaneOutputParams, Vec<u16>> for XPlaneSM2MMapper {
         o[output::GEAR_R_IDX] = oscale!(i.gears.right, 0.0, 1.0, 0.0, 32767.0);
         let mut lights = 0;
         if i.lights.landing {
-            lights.bit_set(0);
+            lights = bit_set(lights, 0);
         }
         if i.lights.navigation {
-            lights.bit_set(1);
+            lights = bit_set(lights, 1);
         }
         if i.lights.beacon {
-            lights.bit_set(2);
+            lights = bit_set(lights, 2);
         }
         o[output::LIGHTS_IDX] = lights.reverse_bits();
-        // o.push(lights);
         o
     }
+}
+
+fn bit_test(value: u16, index: u16) -> bool {
+    (value >> index) & 0b1 == 1
+}
+
+fn bit_set(value: u16, index: u16) -> u16 {
+    let mask = 1 << index;
+    value | mask
 }
