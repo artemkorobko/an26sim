@@ -77,3 +77,17 @@ impl<T: 'static> Chain<T> {
         self.supplier.supply()
     }
 }
+
+mod test {
+    #[test]
+    fn should_invoke_all_chain_stages() {
+        const EXPECTED_RESULT: i32 = 20;
+        let mut chain = super::Chain::supply(|| 10i32)
+            .map(|value| value + 10)
+            .consume(|value: &_| assert_eq!(*value, EXPECTED_RESULT));
+
+        let result = chain.execute();
+
+        assert_eq!(result, EXPECTED_RESULT);
+    }
+}
