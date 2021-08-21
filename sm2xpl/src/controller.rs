@@ -4,7 +4,7 @@ use xplm::flight_loop::{FlightLoopCallback, LoopState};
 
 use crate::{
     common::chain::{Chain, Mapper},
-    io::{delta::DeltaTimeSupplier, generator::USBParamGenerator, index::output::*},
+    io::{delta::DeltaTimeSupplier, generator::usb::USBParamGenerator, index::output::*},
     plugin_event::PluginEvent,
     xplane::{
         consumer::{XPlaneDataRefUpdater, XPlaneInspectorUpdater},

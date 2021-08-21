@@ -4,7 +4,7 @@ use crate::{
     common::{chain::Mapper, percent::Percent},
     io::{
         index::*,
-        params::{input::InputParams, ParamResult},
+        params::{input::InputParams, ParamReadResult},
     },
 };
 
@@ -20,7 +20,7 @@ macro_rules! oscale {
 pub struct SM2MXPlaneMapper;
 
 impl SM2MXPlaneMapper {
-    fn map(i: InputParams) -> ParamResult<XPlaneInputParams> {
+    fn map(i: InputParams) -> ParamReadResult<XPlaneInputParams> {
         let mut o = XPlaneInputParams::default();
         let hi = (i.latitude_hi()?.reverse_bits() as i16 as f64).scale(0.0, 32768.0, 0.0, 90.0);
         let lo = (i.latitude_lo()?.reverse_bits() as f64).scale(0.0, 65535.0, 0.0, 0.0027465);

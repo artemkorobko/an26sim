@@ -1,14 +1,14 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum ParamError {
+pub enum ParamReadError {
     #[error("Parameter does not exists at index {0} in array of length {1}")]
     InvalidIndex(usize, usize),
     #[error("Input parameters vec has {0} params, expected at least {1}")]
     InvalidInput(usize, usize),
 }
 
-pub type ParamResult<T> = Result<T, ParamError>;
+pub type ParamReadResult<T> = Result<T, ParamReadError>;
 
 pub mod input {
     pub const LAT_HI_IDX: usize = 0;
@@ -37,95 +37,95 @@ pub mod input {
     }
 
     impl InputParams {
-        pub fn from_vec(vec: Vec<u16>) -> super::ParamResult<InputParams> {
+        pub fn from_vec(vec: Vec<u16>) -> super::ParamReadResult<InputParams> {
             if vec.len() >= PARAMS_COUNT {
                 Ok(InputParams { params: vec })
             } else {
-                Err(super::ParamError::InvalidInput(vec.len(), PARAMS_COUNT))
+                Err(super::ParamReadError::InvalidInput(vec.len(), PARAMS_COUNT))
             }
         }
 
-        pub fn latitude_hi(&self) -> super::ParamResult<u16> {
+        pub fn latitude_hi(&self) -> super::ParamReadResult<u16> {
             self.read_param(LAT_HI_IDX)
         }
 
-        pub fn latitude_lo(&self) -> super::ParamResult<u16> {
+        pub fn latitude_lo(&self) -> super::ParamReadResult<u16> {
             self.read_param(LAT_LO_IDX)
         }
 
-        pub fn longitude_hi(&self) -> super::ParamResult<u16> {
+        pub fn longitude_hi(&self) -> super::ParamReadResult<u16> {
             self.read_param(LON_HI_IDX)
         }
 
-        pub fn longitude_lo(&self) -> super::ParamResult<u16> {
+        pub fn longitude_lo(&self) -> super::ParamReadResult<u16> {
             self.read_param(LON_LO_IDX)
         }
 
-        pub fn altitude(&self) -> super::ParamResult<u16> {
+        pub fn altitude(&self) -> super::ParamReadResult<u16> {
             self.read_param(ALT_IDX)
         }
 
-        pub fn heading(&self) -> super::ParamResult<u16> {
+        pub fn heading(&self) -> super::ParamReadResult<u16> {
             self.read_param(HDG_IDX)
         }
 
-        pub fn pitch(&self) -> super::ParamResult<u16> {
+        pub fn pitch(&self) -> super::ParamReadResult<u16> {
             self.read_param(PITCH_IDX)
         }
 
-        pub fn roll(&self) -> super::ParamResult<u16> {
+        pub fn roll(&self) -> super::ParamReadResult<u16> {
             self.read_param(ROLL_IDX)
         }
 
-        pub fn ailerons(&self) -> super::ParamResult<u16> {
+        pub fn ailerons(&self) -> super::ParamReadResult<u16> {
             self.read_param(AIL_IDX)
         }
 
-        pub fn elevator(&self) -> super::ParamResult<u16> {
+        pub fn elevator(&self) -> super::ParamReadResult<u16> {
             self.read_param(ELEV_IDX)
         }
 
-        pub fn rudder(&self) -> super::ParamResult<u16> {
+        pub fn rudder(&self) -> super::ParamReadResult<u16> {
             self.read_param(RUD_IDX)
         }
 
-        pub fn flaps(&self) -> super::ParamResult<u16> {
+        pub fn flaps(&self) -> super::ParamReadResult<u16> {
             self.read_param(FLP_IDX)
         }
 
-        pub fn engine_left(&self) -> super::ParamResult<u16> {
+        pub fn engine_left(&self) -> super::ParamReadResult<u16> {
             self.read_param(ENG_L_IDX)
         }
 
-        pub fn engine_right(&self) -> super::ParamResult<u16> {
+        pub fn engine_right(&self) -> super::ParamReadResult<u16> {
             self.read_param(ENG_R_IDX)
         }
 
-        pub fn gear_front(&self) -> super::ParamResult<u16> {
+        pub fn gear_front(&self) -> super::ParamReadResult<u16> {
             self.read_param(GEAR_F_IDX)
         }
 
-        pub fn gear_left(&self) -> super::ParamResult<u16> {
+        pub fn gear_left(&self) -> super::ParamReadResult<u16> {
             self.read_param(GEAR_L_IDX)
         }
 
-        pub fn gear_right(&self) -> super::ParamResult<u16> {
+        pub fn gear_right(&self) -> super::ParamReadResult<u16> {
             self.read_param(GEAR_R_IDX)
         }
 
-        pub fn lights(&self) -> super::ParamResult<u16> {
+        pub fn lights(&self) -> super::ParamReadResult<u16> {
             self.read_param(LIGHTS_IDX)
         }
 
-        pub fn reset(&self) -> super::ParamResult<u16> {
+        pub fn reset(&self) -> super::ParamReadResult<u16> {
             self.read_param(RESET_IDX)
         }
 
-        fn read_param(&self, idx: usize) -> super::ParamResult<u16> {
+        fn read_param(&self, idx: usize) -> super::ParamReadResult<u16> {
             if self.params.len() > idx {
                 Ok(self.params[idx])
             } else {
-                Err(super::ParamError::InvalidIndex(idx, self.params.len()))
+                Err(super::ParamReadError::InvalidIndex(idx, self.params.len()))
             }
         }
     }

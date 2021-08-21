@@ -1,12 +1,11 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
-use num_traits::PrimInt;
-use rand::{distributions::uniform::SampleUniform, prelude::ThreadRng, Rng};
-use xplm::debugln;
+use crate::{
+    common::{chain::Supplier, timer::DeltaCounter},
+    io::{delta::DeltaTimeSupplier, params::input::*},
+};
 
-use crate::common::{chain::Supplier, timer::DeltaCounter};
-
-use super::{delta::DeltaTimeSupplier, params::input::*};
+use super::{bounced::BouncedGenerator, generic::Generator};
 
 const GEN_TIMEOUT: Duration = Duration::from_millis(50);
 
@@ -152,8 +151,8 @@ impl USBParamGenerator {
         let param = &mut self.params[idx];
         match param {
             GeneratorType::ConstU16(param) => *param = value,
-            GeneratorType::RangeU16(generator) => generator.param = value,
-            GeneratorType::RangeI16(generator) => generator.param = value as i16,
+            GeneratorType::RangeU16(generator) => generator.reset(value),
+            GeneratorType::RangeI16(generator) => generator.reset(value as i16),
         }
     }
 
@@ -184,7 +183,7 @@ impl Supplier<Option<InputParams>> for USBParamGenerator {
             match params {
                 Ok(params) => Some(params),
                 Err(error) => {
-                    debugln!("{}", error.to_string());
+                    xplm::debugln!("{}", error.to_string());
                     None
                 }
             }
@@ -198,8 +197,8 @@ impl Supplier<Option<InputParams>> for USBParamGenerator {
 #[derive(Copy, Clone)]
 enum GeneratorType {
     ConstU16(u16),
-    RangeU16(Generator<u16>),
-    RangeI16(Generator<i16>),
+    RangeU16(BouncedGenerator<u16>),
+    RangeI16(BouncedGenerator<i16>),
 }
 
 impl GeneratorType {
@@ -208,100 +207,6 @@ impl GeneratorType {
             GeneratorType::ConstU16(param) => *param,
             GeneratorType::RangeU16(generator) => generator.generate(delta),
             GeneratorType::RangeI16(generator) => generator.generate(delta) as u16,
-        }
-    }
-}
-
-#[derive(Copy, Clone)]
-enum Direction {
-    Increase,
-    Decrease,
-}
-
-#[derive(Copy, Clone)]
-struct Generator<T> {
-    param: T,
-    step: T,
-    min: T,
-    max: T,
-    direction: Direction,
-    timer: DeltaCounter,
-    cnt: usize,
-}
-
-impl<T: PrimInt + SampleUniform + std::fmt::Debug> Generator<T> {
-    fn new(step: T, min: T, max: T, timeout: Duration) -> Self {
-        Self {
-            param: T::zero(),
-            step,
-            min,
-            max,
-            direction: Direction::Increase,
-            timer: DeltaCounter::immediate(timeout),
-            cnt: 0,
-        }
-    }
-
-    fn can_calculate(&mut self, delta: &Duration) -> bool {
-        self.timer.count(delta).is_elapsed()
-    }
-
-    fn should_bounce(&mut self, random: &mut ThreadRng) -> bool {
-        self.cnt += 1;
-        if self.cnt == 50 {
-            self.cnt = 0;
-            random.gen::<bool>()
-        } else {
-            false
-        }
-    }
-
-    fn in_range(&self, other: T) -> bool {
-        other > self.min && other < self.max
-    }
-
-    fn reverse_direction(&mut self) {
-        match self.direction {
-            Direction::Increase => self.direction = Direction::Decrease,
-            Direction::Decrease => self.direction = Direction::Increase,
-        }
-    }
-
-    fn calculate(&mut self) -> (T, bool) {
-        let result = match self.direction {
-            Direction::Increase => self.param.checked_add(&self.step),
-            Direction::Decrease => self.param.checked_sub(&self.step),
-        };
-
-        match result {
-            Some(result) => (result, false),
-            None => (self.param, true),
-        }
-    }
-
-    fn bounce(&self, random: &mut ThreadRng) -> T {
-        let value = random.gen_range(self.min..self.max);
-        println!("BOUNCE: {:?} - {:?}", self.param, value);
-        value
-    }
-
-    fn generate(&mut self, delta: &Duration) -> T {
-        if self.can_calculate(delta) {
-            let (calculated, overflow) = self.calculate();
-            if !self.in_range(calculated) || overflow {
-                self.reverse_direction();
-                self.param
-            } else {
-                self.param = calculated;
-                let mut random = rand::thread_rng();
-                if self.should_bounce(&mut random) {
-                    self.bounce(&mut random)
-                } else {
-                    self.param
-                }
-            }
-        } else {
-            self.param
         }
     }
 }
