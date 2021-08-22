@@ -43,6 +43,7 @@ impl Consumer<XPlaneInputParams> for XPlaneDataRefUpdater {
 }
 
 pub struct XPlaneInspectorUpdater {
+    datarefs: Rc<RefCell<DataRefs>>,
     inspector: Rc<RefCell<InspectorWindow>>,
     delta: Rc<RefCell<DeltaTimeSupplier>>,
     timer: DeltaCounter,
@@ -50,10 +51,12 @@ pub struct XPlaneInspectorUpdater {
 
 impl XPlaneInspectorUpdater {
     pub fn new(
+        datarefs: Rc<RefCell<DataRefs>>,
         inspector: Rc<RefCell<InspectorWindow>>,
         delta: Rc<RefCell<DeltaTimeSupplier>>,
     ) -> Self {
         Self {
+            datarefs,
             inspector,
             delta,
             timer: DeltaCounter::immediate(Duration::from_millis(50)),
@@ -69,16 +72,23 @@ impl XPlaneInspectorUpdater {
         }
     }
 
-    fn update_inspector(&mut self, input: &XPlaneOutputParams) {
-        let result = self.inspector.borrow_mut().update(input);
+    fn update_inspector(&mut self, input: &XPlaneInputParams) {
+        let datarefs = self.datarefs.borrow();
+        let local = datarefs.location.local();
+        let result = self.inspector.borrow_mut().update(
+            &datarefs.as_input(),
+            &datarefs.general.get(),
+            &datarefs.view.get(),
+            datarefs.terrain_probe.distance(local.x, local.y, local.z),
+        );
         if let Err(error) = result {
             debugln!("{}", error.to_string());
         }
     }
 }
 
-impl Consumer<XPlaneOutputParams> for XPlaneInspectorUpdater {
-    fn consume(&mut self, input: &XPlaneOutputParams) {
+impl Consumer<XPlaneInputParams> for XPlaneInspectorUpdater {
+    fn consume(&mut self, input: &XPlaneInputParams) {
         if self.should_update_inspector() {
             self.update_inspector(input);
         }

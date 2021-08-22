@@ -3,7 +3,10 @@ use std::{os::raw::c_int, sync::mpsc::Sender};
 use xplm::geometry::Rect;
 use xplm_sys::*;
 
-use crate::{plugin_event::PluginEvent, xplane::params::XPlaneOutputParams};
+use crate::{
+    plugin_event::PluginEvent,
+    xplane::params::{General, View, XPlaneInputParams},
+};
 
 use super::{
     api::{self, ApiResult},
@@ -48,8 +51,14 @@ impl InspectorWindow {
         visible == VISIBLE
     }
 
-    pub fn update(&self, params: &XPlaneOutputParams) -> ApiResult<()> {
-        self.widgets.update(params)
+    pub fn update(
+        &self,
+        params: &XPlaneInputParams,
+        general: &General,
+        view: &View,
+        terrain: f32,
+    ) -> ApiResult<()> {
+        self.widgets.update(params, general, view, terrain)
     }
 
     fn register_close_handler(&self) {

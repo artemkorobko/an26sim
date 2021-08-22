@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc, time::Duration};
 
 use crate::{
     common::{chain::Supplier, timer::DeltaCounter},
-    io::{delta::DeltaTimeSupplier, params::input::*},
+    io::delta::DeltaTimeSupplier,
 };
 
 use super::{bounced::BouncedGenerator, generic::Generator};
@@ -18,7 +18,7 @@ pub struct USBParamGenerator {
 impl USBParamGenerator {
     pub fn constant(delta: Rc<RefCell<DeltaTimeSupplier>>) -> Self {
         Self {
-            params: vec![GeneratorType::ConstU16(0); PARAMS_COUNT],
+            params: vec![GeneratorType::ConstU16(0); 18],
             delta,
             timer: DeltaCounter::immediate(GEN_TIMEOUT),
         }
@@ -81,70 +81,10 @@ impl USBParamGenerator {
         }
     }
 
-    pub fn set_latitude(&mut self, hi: u16, lo: u16) {
-        self.update_param(LAT_HI_IDX, hi);
-        self.update_param(LAT_LO_IDX, lo);
-    }
-
-    pub fn set_longitude(&mut self, hi: u16, lo: u16) {
-        self.update_param(LON_HI_IDX, hi);
-        self.update_param(LON_LO_IDX, lo);
-    }
-
-    pub fn set_altitude(&mut self, value: u16) {
-        self.update_param(ALT_IDX, value);
-    }
-
-    pub fn set_heading(&mut self, value: u16) {
-        self.update_param(HDG_IDX, value);
-    }
-
-    pub fn set_pitch(&mut self, value: u16) {
-        self.update_param(PITCH_IDX, value);
-    }
-
-    pub fn set_roll(&mut self, value: u16) {
-        self.update_param(ROLL_IDX, value);
-    }
-
-    pub fn set_ailerons(&mut self, value: u16) {
-        self.update_param(AIL_IDX, value);
-    }
-
-    pub fn set_elevator(&mut self, value: u16) {
-        self.update_param(ELEV_IDX, value);
-    }
-
-    pub fn set_rudder(&mut self, value: u16) {
-        self.update_param(RUD_IDX, value);
-    }
-
-    pub fn set_flaps(&mut self, value: u16) {
-        self.update_param(FLP_IDX, value);
-    }
-
-    pub fn set_engine_left(&mut self, value: u16) {
-        self.update_param(ENG_L_IDX, value);
-    }
-
-    pub fn set_engine_right(&mut self, value: u16) {
-        self.update_param(ENG_R_IDX, value);
-    }
-
-    pub fn set_gear_front(&mut self, value: u16) {
-        self.update_param(GEAR_F_IDX, value);
-    }
-
-    pub fn set_gear_left(&mut self, value: u16) {
-        self.update_param(GEAR_L_IDX, value);
-    }
-
-    pub fn set_gear_right(&mut self, value: u16) {
-        self.update_param(GEAR_R_IDX, value);
-    }
-
-    pub fn set_lights(&mut self, value: u16) {
-        self.update_param(LIGHTS_IDX, value);
+    pub fn update_params(&mut self, params: &Vec<u16>) {
+        for (idx, param) in params.iter().enumerate() {
+            self.update_param(idx, *param);
+        }
     }
 
     fn update_param(&mut self, idx: usize, value: u16) {
@@ -174,19 +114,11 @@ impl USBParamGenerator {
     }
 }
 
-impl Supplier<Option<InputParams>> for USBParamGenerator {
-    fn supply(&mut self) -> Option<InputParams> {
+impl Supplier<Option<Vec<u16>>> for USBParamGenerator {
+    fn supply(&mut self) -> Option<Vec<u16>> {
         let delta = self.delta.borrow_mut().supply();
         if self.can_supply(&delta) {
-            let params_vec = self.generate(&delta);
-            let params = InputParams::from_vec(params_vec);
-            match params {
-                Ok(params) => Some(params),
-                Err(error) => {
-                    xplm::debugln!("{}", error.to_string());
-                    None
-                }
-            }
+            Some(self.generate(&delta))
         } else {
             self.update(&delta);
             None

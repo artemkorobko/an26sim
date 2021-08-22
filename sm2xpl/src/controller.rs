@@ -4,7 +4,7 @@ use xplm::flight_loop::{FlightLoopCallback, LoopState};
 
 use crate::{
     common::chain::{Chain, Mapper},
-    io::{delta::DeltaTimeSupplier, generator::usb::USBParamGenerator, index::output::*},
+    io::{delta::DeltaTimeSupplier, generator::usb::USBParamGenerator},
     plugin_event::PluginEvent,
     xplane::{
         consumer::{XPlaneDataRefUpdater, XPlaneInspectorUpdater},
@@ -12,7 +12,10 @@ use crate::{
         debouncer::XPlaneParamDebouncer,
         inspector::window::InspectorWindow,
         interpolator::XPlaneParamInterpolator,
-        mapper::{SM2MXPlaneMapper, XPlaneSM2MMapper},
+        mapper::{
+            input::{SM2MXPlaneInputMapper, XPlaneSM2MInputMapper},
+            output::XPlaneSM2MOutputMapper,
+        },
         menu::{instance::PluginMenu, item::MenuItem},
         params::XPlaneInputParams,
         supplier::XPlaneOutputSupplier,
@@ -42,7 +45,7 @@ impl Controller {
         let datarefs = Rc::new(RefCell::new(datarefs));
         let inspector = Rc::new(RefCell::new(inspector));
         let delta = Rc::new(RefCell::new(DeltaTimeSupplier::default()));
-        let ochain = build_default_output_chain(datarefs.clone(), inspector.clone(), delta.clone());
+        let ochain = build_default_output_chain(datarefs.clone());
 
         Self {
             menu,
@@ -81,18 +84,23 @@ impl Controller {
     }
 
     fn build_generator_input_chain(&self) -> InputChain {
-        let datarefs = self.datarefs.borrow();
-        let params = XPlaneSM2MMapper::default().map(datarefs.as_output());
+        let input_params = self.datarefs.borrow().as_input();
+        let params = XPlaneSM2MInputMapper::default().map(input_params);
         let mut generator = USBParamGenerator::dynamic(self.delta_supplier.clone());
-        fill_param_generator(&mut generator, &params);
+        generator.update_params(&params);
         Chain::supply(generator)
-            .map(SM2MXPlaneMapper::default())
+            .map(SM2MXPlaneInputMapper::default())
             .map(XPlaneParamDebouncer::new())
             .map(XPlaneParamInterpolator::new(
-                datarefs.as_input(),
+                input_params,
                 self.delta_supplier.clone(),
             ))
             .consume(XPlaneDataRefUpdater::new(self.datarefs.clone()))
+            .consume(XPlaneInspectorUpdater::new(
+                self.datarefs.clone(),
+                self.inspector.clone(),
+                self.delta_supplier.clone(),
+            ))
     }
 
     fn execute(&mut self, delta: Duration) {
@@ -104,33 +112,8 @@ impl Controller {
     }
 }
 
-fn build_default_output_chain(
-    datarefs: Rc<RefCell<DataRefs>>,
-    inspector: Rc<RefCell<InspectorWindow>>,
-    delta: Rc<RefCell<DeltaTimeSupplier>>,
-) -> OutputChain {
-    Chain::supply(XPlaneOutputSupplier::new(datarefs))
-        .consume(XPlaneInspectorUpdater::new(inspector, delta))
-        .map(XPlaneSM2MMapper)
-}
-
-fn fill_param_generator(generator: &mut USBParamGenerator, params: &[u16]) {
-    generator.set_latitude(17606, 21450);
-    generator.set_longitude(3193, 15130);
-    generator.set_altitude(params[ALT_IDX].reverse_bits());
-    generator.set_heading(params[HDG_IDX].reverse_bits());
-    generator.set_pitch(params[PITCH_IDX].reverse_bits());
-    generator.set_roll(params[ROLL_IDX].reverse_bits());
-    generator.set_ailerons(params[AIL_IDX].reverse_bits());
-    generator.set_elevator(params[ELEV_IDX].reverse_bits());
-    generator.set_rudder(params[RUD_IDX].reverse_bits());
-    generator.set_flaps(params[FLP_IDX].reverse_bits());
-    generator.set_engine_left(params[ENG_L_IDX].reverse_bits());
-    generator.set_engine_right(params[ENG_R_IDX].reverse_bits());
-    generator.set_gear_front(params[GEAR_F_IDX].reverse_bits());
-    generator.set_gear_left(params[GEAR_L_IDX].reverse_bits());
-    generator.set_gear_right(params[GEAR_R_IDX].reverse_bits());
-    generator.set_lights(params[LIGHTS_IDX].reverse_bits());
+fn build_default_output_chain(datarefs: Rc<RefCell<DataRefs>>) -> OutputChain {
+    Chain::supply(XPlaneOutputSupplier::new(datarefs.clone())).map(XPlaneSM2MOutputMapper)
 }
 
 impl FlightLoopCallback for Controller {

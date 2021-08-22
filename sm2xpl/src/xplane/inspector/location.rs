@@ -35,11 +35,11 @@ impl LocationBlock {
         ))
     }
 
-    pub fn update(&self, location: &Location, terrain_altitude: f32) -> ApiResult<()> {
+    pub fn update(&self, location: &Location, terrain: f32) -> ApiResult<()> {
         update_widget(self.latitude, &format_f64(location.latitude))?;
         update_widget(self.longitude, &format_f64(location.longitude))?;
         update_widget(self.altitude, &format_altitude(location.altitude))?;
-        update_widget(self.terrain, &format_altitude(terrain_altitude as f64))
+        update_widget(self.terrain, &format_altitude(terrain as f64))
     }
 }
 

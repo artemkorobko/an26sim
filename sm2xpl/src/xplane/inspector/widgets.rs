@@ -1,7 +1,7 @@
 use xplm::geometry::Rect;
 use xplm_sys::XPWidgetID;
 
-use crate::xplane::params::XPlaneOutputParams;
+use crate::xplane::params::{General, View, XPlaneInputParams};
 
 use super::{
     api::ApiResult, engines::EnginesBlock, gears::GearsBlock, general::GeneralBlock, io::IOBlock,
@@ -45,14 +45,19 @@ impl Widgets {
         })
     }
 
-    pub fn update(&self, params: &XPlaneOutputParams) -> ApiResult<()> {
-        self.general.update(&params.general)?;
+    pub fn update(
+        &self,
+        params: &XPlaneInputParams,
+        general: &General,
+        view: &View,
+        terrain: f32,
+    ) -> ApiResult<()> {
+        self.general.update(general)?;
         // self.io.update(input, output)?;
         self.surfaces.update(&params.surfaces)?;
         self.lights.update(&params.lights)?;
-        self.view.update(&params.view)?;
-        self.location
-            .update(&params.location, params.terrain_distance)?;
+        self.view.update(&view)?;
+        self.location.update(&params.location, terrain)?;
         self.orientation.update(&params.orientation)?;
         self.engines.update(&params.engines)?;
         self.gears.update(&params.gears)

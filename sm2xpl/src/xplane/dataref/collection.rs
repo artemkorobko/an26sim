@@ -1,6 +1,6 @@
 use xplm::data::borrowed::FindError;
 
-use crate::xplane::params::{XPlaneInputParams, XPlaneOutputParams};
+use crate::xplane::params::{General, XPlaneInputParams, XPlaneOutputParams};
 
 use super::variables::{
     engines::EnginesDataRef, gears::GearsDataRef, general::GeneralDataRef, lights::LightsDataRef,
@@ -59,14 +59,6 @@ impl DataRefs {
     pub fn as_output(&self) -> XPlaneOutputParams {
         let local = self.location.local();
         XPlaneOutputParams {
-            general: self.general.get(),
-            location: self.location.get(),
-            orientation: self.orientation.get(),
-            surfaces: self.surfaces.get(),
-            engines: self.engines.get(),
-            gears: self.gears.get(),
-            lights: self.lights.get(),
-            view: self.view.get(),
             terrain_distance: self.terrain_probe.distance(local.x, local.y, local.z),
         }
     }

@@ -66,13 +66,5 @@ pub struct View {
 
 #[derive(Default, Copy, Clone)]
 pub struct XPlaneOutputParams {
-    pub general: General,
-    pub location: Location,
-    pub orientation: Orientation,
-    pub surfaces: Surfaces,
-    pub engines: Engines,
-    pub gears: Gears,
-    pub lights: Lights,
-    pub view: View,
     pub terrain_distance: f32,
 }
