@@ -1,8 +1,13 @@
 use super::generic::{OutputParams, ParamsIOError, ParamsIOResult};
 
-pub const TERRAIN_DISTANCE: usize = 0;
+const TERRAIN_DISTANCE: usize = 0;
+const PARAMS_COUNT: usize = TERRAIN_DISTANCE + 1;
 
 impl OutputParams for Vec<u16> {
+    fn new_output_params() -> Self {
+        (0u16..PARAMS_COUNT as u16).collect()
+    }
+
     fn terrain_distance(mut self, value: u16) -> ParamsIOResult<Self> {
         self.write_param(TERRAIN_DISTANCE, value)?;
         Ok(self)
@@ -15,5 +20,23 @@ impl OutputParams for Vec<u16> {
         } else {
             Err(ParamsIOError::InvalidIndex(idx, self.len()))
         }
+    }
+}
+
+mod test {
+    use super::*;
+
+    #[test]
+    fn should_write_params() {
+        let vec = Vec::new_output_params().terrain_distance(1).unwrap();
+
+        assert_eq!(vec, vec![1]);
+    }
+
+    #[test]
+    fn should_return_error_when_index_is_out_of_bounds() {
+        let error = Vec::new().terrain_distance(1).err().unwrap();
+
+        assert_eq!(error.to_string(), "Parameter does not exists at index 0 in array of length 0");
     }
 }

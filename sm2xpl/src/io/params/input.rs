@@ -141,6 +141,6 @@ mod test {
 
         let error = vec.lights().err().unwrap();
 
-        assert_eq!(error.to_string(), "q23");
+        assert_eq!(error.to_string(), "Parameter does not exists at index 17 in array of length 10");
     }
 }

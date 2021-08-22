@@ -32,6 +32,7 @@ pub trait InputParams {
 }
 
 pub trait OutputParams: Sized {
+    fn new_output_params() -> Self;
     fn terrain_distance(self, value: u16) -> ParamsIOResult<Self>;
     fn write_param(&mut self, idx: usize, value: u16) -> ParamsIOResult<()>;
 }
