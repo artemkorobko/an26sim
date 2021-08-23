@@ -37,6 +37,9 @@ mod test {
     fn should_return_error_when_index_is_out_of_bounds() {
         let error = Vec::new().terrain_distance(1).err().unwrap();
 
-        assert_eq!(error.to_string(), "Parameter does not exists at index 0 in array of length 0");
+        assert_eq!(
+            error.to_string(),
+            "Parameter does not exists at index 0 in array of length 0"
+        );
     }
 }
