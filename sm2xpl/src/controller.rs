@@ -31,7 +31,7 @@ pub struct Controller {
     inspector: Rc<RefCell<InspectorWindow>>,
     rx: Receiver<PluginEvent>,
     delta_supplier: Rc<RefCell<DeltaTimeSupplier>>,
-    input_chain: Option<InputChain>,
+    input_chain: InputChain,
     output_chain: OutputChain,
     input_metrics: Rc<RefCell<IOMetrics>>,
     output_metrics: Rc<RefCell<IOMetrics>>,
@@ -45,17 +45,29 @@ impl Controller {
         rx: Receiver<PluginEvent>,
     ) -> Self {
         let datarefs = Rc::new(RefCell::new(datarefs));
+        let inspector = Rc::new(RefCell::new(inspector));
+        let input_metrics = Rc::new(RefCell::new(IOMetrics::default()));
+        let output_metrics = Rc::new(RefCell::new(IOMetrics::default()));
+        let delta_supplier = Rc::new(RefCell::new(DeltaTimeSupplier::default()));
+
+        let input_chain = build_default_input_chain(
+            datarefs.clone(),
+            inspector.clone(),
+            delta_supplier.clone(),
+            input_metrics.clone(),
+            output_metrics.clone(),
+        );
 
         Self {
             menu,
             datarefs: datarefs.clone(),
-            inspector: Rc::new(RefCell::new(inspector)),
+            inspector,
             rx,
-            delta_supplier: Rc::new(RefCell::new(DeltaTimeSupplier::default())),
-            input_chain: None,
+            delta_supplier,
+            input_chain,
             output_chain: build_default_output_chain(datarefs),
-            input_metrics: Rc::new(RefCell::new(IOMetrics::default())),
-            output_metrics: Rc::new(RefCell::new(IOMetrics::default())),
+            input_metrics,
+            output_metrics,
         }
     }
 
@@ -73,7 +85,7 @@ impl Controller {
     }
 
     fn start_test(&mut self) {
-        self.input_chain = Some(self.build_generator_input_chain());
+        self.input_chain = self.build_generator_input_chain();
         self.menu.uncheck_item(MenuItem::Physics);
         self.menu.check_item(MenuItem::Inspector);
         self.datarefs.borrow_mut().general.disable_physics();
@@ -81,7 +93,13 @@ impl Controller {
     }
 
     fn stop_test(&mut self) {
-        self.input_chain = None;
+        self.input_chain = build_default_input_chain(
+            self.datarefs.clone(),
+            self.inspector.clone(),
+            self.delta_supplier.clone(),
+            self.input_metrics.clone(),
+            self.output_metrics.clone(),
+        );
     }
 
     fn build_generator_input_chain(&self) -> InputChain {
@@ -107,12 +125,34 @@ impl Controller {
     }
 
     fn execute(&mut self, delta: Duration) {
-        if let Some(input) = &mut self.input_chain {
-            self.delta_supplier.borrow_mut().update(delta);
-            input.execute();
-            self.output_chain.execute();
-        }
+        self.delta_supplier.borrow_mut().update(delta);
+        self.input_chain.execute();
+        self.output_chain.execute();
     }
+}
+
+fn build_default_input_chain(
+    datarefs: Rc<RefCell<DataRefs>>,
+    inspector: Rc<RefCell<InspectorWindow>>,
+    delta_supplier: Rc<RefCell<DeltaTimeSupplier>>,
+    input_metrics: Rc<RefCell<IOMetrics>>,
+    output_metrics: Rc<RefCell<IOMetrics>>,
+) -> InputChain {
+    let input_params = datarefs.borrow().as_input();
+
+    Chain::supply(|| None)
+        .map(SM2MXPlaneInputMapper::default())
+        .map(XPlaneParamInterpolator::new(
+            input_params,
+            delta_supplier.clone(),
+        ))
+        .consume(XPlaneInspectorUpdater::new(
+            datarefs.clone(),
+            inspector.clone(),
+            input_metrics.clone(),
+            output_metrics.clone(),
+            delta_supplier.clone(),
+        ))
 }
 
 fn build_default_output_chain(datarefs: Rc<RefCell<DataRefs>>) -> OutputChain {
