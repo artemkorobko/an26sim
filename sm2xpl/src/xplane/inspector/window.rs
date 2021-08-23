@@ -1,9 +1,10 @@
-use std::{os::raw::c_int, sync::mpsc::Sender};
+use std::{os::raw::c_int, sync::mpsc::Sender, time::Duration};
 
 use xplm::geometry::Rect;
 use xplm_sys::*;
 
 use crate::{
+    io::metrics::IOMetrics,
     plugin_event::PluginEvent,
     xplane::params::{General, View, XPlaneInputParams},
 };
@@ -57,8 +58,12 @@ impl InspectorWindow {
         general: &General,
         view: &View,
         terrain: f32,
+        input: &mut IOMetrics,
+        output: &mut IOMetrics,
+        delta: &Duration,
     ) -> ApiResult<()> {
-        self.widgets.update(params, general, view, terrain)
+        self.widgets
+            .update(params, general, view, terrain, input, output, delta)
     }
 
     fn register_close_handler(&self) {

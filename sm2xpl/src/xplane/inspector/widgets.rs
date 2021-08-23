@@ -1,7 +1,12 @@
+use std::time::Duration;
+
 use xplm::geometry::Rect;
 use xplm_sys::XPWidgetID;
 
-use crate::xplane::params::{General, View, XPlaneInputParams};
+use crate::{
+    io::metrics::IOMetrics,
+    xplane::params::{General, View, XPlaneInputParams},
+};
 
 use super::{
     api::ApiResult, engines::EnginesBlock, gears::GearsBlock, general::GeneralBlock, io::IOBlock,
@@ -51,9 +56,12 @@ impl Widgets {
         general: &General,
         view: &View,
         terrain: f32,
+        input: &mut IOMetrics,
+        output: &mut IOMetrics,
+        delta: &Duration,
     ) -> ApiResult<()> {
         self.general.update(general)?;
-        // self.io.update(input, output)?;
+        self.io.update(input, output, delta)?;
         self.surfaces.update(&params.surfaces)?;
         self.lights.update(&params.lights)?;
         self.view.update(&view)?;

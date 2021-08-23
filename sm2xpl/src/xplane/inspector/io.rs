@@ -1,7 +1,13 @@
+use std::time::Duration;
+
 use xplm::geometry::Rect;
 use xplm_sys::XPWidgetID;
 
-use crate::{label, xplane::inspector::rect_ext::RectExt};
+use crate::{
+    io::metrics::{IOMetrics, IOState},
+    label,
+    xplane::inspector::rect_ext::RectExt,
+};
 
 use super::api::{update_widget, ApiResult};
 
@@ -56,24 +62,29 @@ impl IOBlock {
         ))
     }
 
-    // pub fn update(&self, input: &Metrics, output: &Metrics) -> ApiResult<()> {
-    //     update_widget(self.in_state, format_connected(input.connected))?;
-    //     update_widget(self.in_transferred, &format_size(input.transferred))?;
-    //     update_widget(self.in_packets, &format!("{}", input.packets))?;
-    //     update_widget(self.in_speed, &format_speed(input.speed))?;
-    //     update_widget(self.in_errors, &format!("{}", input.errors))?;
-    //     update_widget(self.out_state, format_connected(output.connected))?;
-    //     update_widget(self.out_transferred, &format_size(output.transferred))?;
-    //     update_widget(self.out_packets, &format!("{}", output.packets))?;
-    //     update_widget(self.out_speed, &format_speed(output.speed))?;
-    //     update_widget(self.out_errors, &format!("{}", output.errors))
-    // }
+    pub fn update(
+        &self,
+        input: &mut IOMetrics,
+        output: &mut IOMetrics,
+        delta: &Duration,
+    ) -> ApiResult<()> {
+        update_widget(self.in_state, format_state(&input.state))?;
+        update_widget(self.in_transferred, &format_size(input.transferred))?;
+        update_widget(self.in_packets, &format!("{}", input.packets))?;
+        update_widget(self.in_speed, &format_speed(input.bps(delta)))?;
+        update_widget(self.in_errors, &format!("{}", input.errors))?;
+        update_widget(self.out_state, format_state(&output.state))?;
+        update_widget(self.out_transferred, &format_size(output.transferred))?;
+        update_widget(self.out_packets, &format!("{}", output.packets))?;
+        update_widget(self.out_speed, &format_speed(output.bps(delta)))?;
+        update_widget(self.out_errors, &format!("{}", output.errors))
+    }
 }
 
-fn format_connected(value: bool) -> &'static str {
-    match value {
-        true => "connected",
-        false => "disconnected",
+fn format_state(state: &IOState) -> &'static str {
+    match state {
+        IOState::Connected => "connected",
+        IOState::Disconnected => "disconnected",
     }
 }
 
@@ -87,10 +98,10 @@ fn format_size(value: usize) -> String {
     }
 }
 
-fn format_speed(value: usize) -> String {
-    if value < 1000 {
-        format!("{}Bps", value)
+fn format_speed(value: f32) -> String {
+    if value < 1000.0 {
+        format!("{:.2}Bps", value)
     } else {
-        format!("{:.2}Kbps", value as f64 / 1024.0)
+        format!("{:.2}Kbps", value / 1024.0)
     }
 }

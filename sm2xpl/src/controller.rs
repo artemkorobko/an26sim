@@ -4,7 +4,7 @@ use xplm::flight_loop::{FlightLoopCallback, LoopState};
 
 use crate::{
     common::chain::{Chain, Mapper},
-    io::{delta::DeltaTimeSupplier, generator::usb::USBParamGenerator},
+    io::{delta::DeltaTimeSupplier, generator::usb::USBParamGenerator, metrics::IOMetrics},
     plugin_event::PluginEvent,
     xplane::{
         consumer::{XPlaneDataRefUpdater, XPlaneInspectorUpdater},
@@ -33,6 +33,8 @@ pub struct Controller {
     delta_supplier: Rc<RefCell<DeltaTimeSupplier>>,
     input_chain: Option<InputChain>,
     output_chain: OutputChain,
+    input_metrics: Rc<RefCell<IOMetrics>>,
+    output_metrics: Rc<RefCell<IOMetrics>>,
 }
 
 impl Controller {
@@ -43,18 +45,17 @@ impl Controller {
         rx: Receiver<PluginEvent>,
     ) -> Self {
         let datarefs = Rc::new(RefCell::new(datarefs));
-        let inspector = Rc::new(RefCell::new(inspector));
-        let delta = Rc::new(RefCell::new(DeltaTimeSupplier::default()));
-        let ochain = build_default_output_chain(datarefs.clone());
 
         Self {
             menu,
-            datarefs,
-            inspector,
+            datarefs: datarefs.clone(),
+            inspector: Rc::new(RefCell::new(inspector)),
             rx,
-            delta_supplier: delta,
+            delta_supplier: Rc::new(RefCell::new(DeltaTimeSupplier::default())),
             input_chain: None,
-            output_chain: ochain,
+            output_chain: build_default_output_chain(datarefs),
+            input_metrics: Rc::new(RefCell::new(IOMetrics::default())),
+            output_metrics: Rc::new(RefCell::new(IOMetrics::default())),
         }
     }
 
@@ -99,6 +100,8 @@ impl Controller {
             .consume(XPlaneInspectorUpdater::new(
                 self.datarefs.clone(),
                 self.inspector.clone(),
+                self.input_metrics.clone(),
+                self.output_metrics.clone(),
                 self.delta_supplier.clone(),
             ))
     }

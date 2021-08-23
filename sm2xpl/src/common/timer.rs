@@ -36,6 +36,10 @@ impl DeltaCounter {
         }
     }
 
+    pub fn delay(&self) -> Duration {
+        self.delay
+    }
+
     pub fn count(&mut self, delta: &Duration) -> Elapsed {
         self.timer += *delta;
         if self.timer >= self.delay {

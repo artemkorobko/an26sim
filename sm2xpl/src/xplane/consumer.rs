@@ -1,19 +1,15 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
-use xplm::debugln;
-
 use crate::{
     common::{
         chain::{Consumer, Supplier},
         timer::DeltaCounter,
     },
-    io::delta::DeltaTimeSupplier,
+    io::{delta::DeltaTimeSupplier, metrics::IOMetrics},
 };
 
 use super::{
-    dataref::collection::DataRefs,
-    inspector::window::InspectorWindow,
-    params::{XPlaneInputParams, XPlaneOutputParams},
+    dataref::collection::DataRefs, inspector::window::InspectorWindow, params::XPlaneInputParams,
 };
 
 pub struct XPlaneDataRefUpdater {
@@ -45,6 +41,8 @@ impl Consumer<XPlaneInputParams> for XPlaneDataRefUpdater {
 pub struct XPlaneInspectorUpdater {
     datarefs: Rc<RefCell<DataRefs>>,
     inspector: Rc<RefCell<InspectorWindow>>,
+    input: Rc<RefCell<IOMetrics>>,
+    output: Rc<RefCell<IOMetrics>>,
     delta: Rc<RefCell<DeltaTimeSupplier>>,
     timer: DeltaCounter,
 }
@@ -53,26 +51,33 @@ impl XPlaneInspectorUpdater {
     pub fn new(
         datarefs: Rc<RefCell<DataRefs>>,
         inspector: Rc<RefCell<InspectorWindow>>,
+        input: Rc<RefCell<IOMetrics>>,
+        output: Rc<RefCell<IOMetrics>>,
         delta: Rc<RefCell<DeltaTimeSupplier>>,
     ) -> Self {
         Self {
             datarefs,
             inspector,
+            input,
+            output,
             delta,
             timer: DeltaCounter::immediate(Duration::from_millis(50)),
         }
     }
 
-    fn should_update_inspector(&mut self) -> bool {
+    fn should_update_inspector(&mut self) -> (bool, Duration) {
         if self.inspector.borrow().visible() {
             let delta = self.delta.borrow_mut().supply();
-            self.timer.count(&delta).is_elapsed()
+            match self.timer.count(&delta) {
+                crate::common::timer::Elapsed::Yes(diff) => (true, self.timer.delay() + diff),
+                crate::common::timer::Elapsed::No => (false, Duration::ZERO),
+            }
         } else {
-            false
+            (false, Duration::ZERO)
         }
     }
 
-    fn update_inspector(&mut self, input: &XPlaneInputParams) {
+    fn update_inspector(&mut self, input: &XPlaneInputParams, delta: &Duration) {
         let datarefs = self.datarefs.borrow();
         let local = datarefs.location.local();
         let result = self.inspector.borrow_mut().update(
@@ -80,17 +85,21 @@ impl XPlaneInspectorUpdater {
             &datarefs.general.get(),
             &datarefs.view.get(),
             datarefs.terrain_probe.distance(local.x, local.y, local.z),
+            &mut self.input.borrow_mut(),
+            &mut self.output.borrow_mut(),
+            delta,
         );
         if let Err(error) = result {
-            debugln!("{}", error.to_string());
+            xplm::debugln!("{}", error.to_string());
         }
     }
 }
 
 impl Consumer<XPlaneInputParams> for XPlaneInspectorUpdater {
     fn consume(&mut self, input: &XPlaneInputParams) {
-        if self.should_update_inspector() {
-            self.update_inspector(input);
+        let (should_update, delta) = self.should_update_inspector();
+        if should_update {
+            self.update_inspector(input, &delta);
         }
     }
 }
