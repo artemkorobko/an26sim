@@ -6,7 +6,7 @@ use xplm_sys::*;
 use crate::{
     io::metrics::IOMetrics,
     plugin_event::PluginEvent,
-    xplane::params::{General, View, XPlaneInputParams},
+    xplane::input_params::{General, View, XPlaneInputParams},
 };
 
 use super::{

@@ -1,7 +1,7 @@
 use xplm::data::borrowed::{DataRef, FindError};
 use xplm::data::{DataRead, DataReadWrite, ReadWrite};
 
-use crate::xplane::params::Lights;
+use crate::xplane::input_params::Lights;
 
 const ON: i32 = 1;
 const OFF: i32 = 0;

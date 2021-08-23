@@ -3,7 +3,7 @@ use xplm_sys::XPWidgetID;
 
 use crate::{
     label,
-    xplane::{inspector::rect_ext::RectExt, params::Surfaces},
+    xplane::{input_params::Surfaces, inspector::rect_ext::RectExt},
 };
 
 use super::{

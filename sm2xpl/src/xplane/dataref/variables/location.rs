@@ -2,7 +2,7 @@ use xplm::data::borrowed::{DataRef, FindError};
 use xplm::data::{DataRead, DataReadWrite, ReadWrite};
 use xplm_sys::{XPLMLocalToWorld, XPLMWorldToLocal};
 
-use crate::xplane::params::Location;
+use crate::xplane::input_params::Location;
 
 pub struct Local {
     pub x: f64,

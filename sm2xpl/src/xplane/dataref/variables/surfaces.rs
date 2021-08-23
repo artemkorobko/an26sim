@@ -1,7 +1,7 @@
 use xplm::data::borrowed::{DataRef, FindError};
 use xplm::data::{DataRead, DataReadWrite, ReadWrite};
 
-use crate::xplane::params::Surfaces;
+use crate::xplane::input_params::Surfaces;
 
 pub struct SurfacesDataRef {
     yoke_roll_ratio: DataRef<f32, ReadWrite>,

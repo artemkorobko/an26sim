@@ -5,7 +5,7 @@ use xplm_sys::XPWidgetID;
 
 use crate::{
     io::metrics::IOMetrics,
-    xplane::params::{General, View, XPlaneInputParams},
+    xplane::input_params::{General, View, XPlaneInputParams},
 };
 
 use super::{

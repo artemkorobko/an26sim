@@ -1,7 +1,7 @@
 use xplm::data::borrowed::{DataRef, FindError};
 use xplm::data::{ArrayRead, ArrayReadWrite, ReadWrite};
 
-use crate::xplane::params::Engines;
+use crate::xplane::input_params::Engines;
 
 const LEFT_IDX: usize = 0;
 const RIGHT_IDX: usize = 1;

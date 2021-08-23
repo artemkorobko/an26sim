@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::common::chain::Supplier;
 
-use super::{dataref::collection::DataRefs, params::XPlaneOutputParams};
+use super::{dataref::collection::DataRefs, output_params::XPlaneOutputParams};
 
 pub struct XPlaneOutputSupplier {
     datarefs: Rc<RefCell<DataRefs>>,

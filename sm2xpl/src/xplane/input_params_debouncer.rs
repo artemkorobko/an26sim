@@ -7,7 +7,7 @@ use super::{
         angular::AngularDebouncer, boolean::BooleanDebouncer, generic::Debouncer,
         linear::LinearDebouncer,
     },
-    params::{Engines, Gears, Lights, Location, Orientation, Surfaces, XPlaneInputParams},
+    input_params::{Engines, Gears, Lights, Location, Orientation, Surfaces, XPlaneInputParams},
 };
 
 pub struct XPlaneParamDebouncer {

@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{common::chain::Mapper, io::delta::DeltaTimeSupplier};
 
-use super::params::XPlaneInputParams;
+use super::input_params::XPlaneInputParams;
 
 pub struct XPlaneParamInterpolator {
     params: XPlaneInputParams,

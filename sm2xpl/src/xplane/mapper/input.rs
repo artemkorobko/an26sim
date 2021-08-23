@@ -1,7 +1,7 @@
 use crate::{
     common::{chain::Mapper, percent::Percent},
     io::params::generic::{InputParams, ParamsIOResult},
-    xplane::params::XPlaneInputParams,
+    xplane::input_params::XPlaneInputParams,
 };
 
 use super::bit::{bit_set, bit_test};

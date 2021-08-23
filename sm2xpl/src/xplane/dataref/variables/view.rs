@@ -1,7 +1,7 @@
 use xplm::data::borrowed::{DataRef, FindError};
 use xplm::data::{DataRead, ReadWrite};
 
-use crate::xplane::params::View;
+use crate::xplane::input_params::View;
 
 pub struct ViewDataRef {
     acf_pex: DataRef<f32, ReadWrite>,

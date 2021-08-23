@@ -9,7 +9,8 @@ use crate::{
 };
 
 use super::{
-    dataref::collection::DataRefs, inspector::window::InspectorWindow, params::XPlaneInputParams,
+    dataref::collection::DataRefs, input_params::XPlaneInputParams,
+    inspector::window::InspectorWindow,
 };
 
 pub struct XPlaneDataRefUpdater {

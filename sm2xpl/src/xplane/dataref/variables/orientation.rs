@@ -1,7 +1,7 @@
 use xplm::data::borrowed::{DataRef, FindError};
 use xplm::data::{DataRead, DataReadWrite, ReadWrite};
 
-use crate::xplane::params::Orientation;
+use crate::xplane::input_params::Orientation;
 
 pub struct OrientationDataRef {
     // True heading of the plane in degrees from the Z axis (degrees) [0.0..360.0]

@@ -63,8 +63,3 @@ pub struct View {
     pub y: f32,
     pub z: f32,
 }
-
-#[derive(Default, Copy, Clone)]
-pub struct XPlaneOutputParams {
-    pub terrain_distance: f32,
-}

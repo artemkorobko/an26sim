@@ -4,8 +4,8 @@ use xplm_sys::XPWidgetID;
 use crate::{
     label,
     xplane::{
+        input_params::General,
         inspector::{api::update_widget, rect_ext::RectExt},
-        params::General,
     },
 };
 

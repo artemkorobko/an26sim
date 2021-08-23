@@ -7,18 +7,18 @@ use crate::{
     io::{delta::DeltaTimeSupplier, generator::usb::USBParamGenerator, metrics::IOMetrics},
     plugin_event::PluginEvent,
     xplane::{
-        consumer::{XPlaneDataRefUpdater, XPlaneInspectorUpdater},
         dataref::collection::DataRefs,
-        debouncer::XPlaneParamDebouncer,
+        input_params::XPlaneInputParams,
+        input_params_consumer::{XPlaneDataRefUpdater, XPlaneInspectorUpdater},
+        input_params_debouncer::XPlaneParamDebouncer,
+        input_params_interpolator::XPlaneParamInterpolator,
         inspector::window::InspectorWindow,
-        interpolator::XPlaneParamInterpolator,
         mapper::{
             input::{SM2MXPlaneInputMapper, XPlaneSM2MInputMapper},
             output::XPlaneSM2MOutputMapper,
         },
         menu::{instance::PluginMenu, item::MenuItem},
-        params::XPlaneInputParams,
-        supplier::XPlaneOutputSupplier,
+        output_params_supplier::XPlaneOutputSupplier,
     },
 };
 

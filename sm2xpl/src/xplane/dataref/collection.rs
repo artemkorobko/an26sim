@@ -1,6 +1,6 @@
 use xplm::data::borrowed::FindError;
 
-use crate::xplane::params::{General, XPlaneInputParams, XPlaneOutputParams};
+use crate::xplane::{input_params::XPlaneInputParams, output_params::XPlaneOutputParams};
 
 use super::variables::{
     engines::EnginesDataRef, gears::GearsDataRef, general::GeneralDataRef, lights::LightsDataRef,

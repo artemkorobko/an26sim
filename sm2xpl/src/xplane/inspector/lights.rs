@@ -3,7 +3,7 @@ use xplm_sys::XPWidgetID;
 
 use crate::{
     label,
-    xplane::{inspector::rect_ext::RectExt, params::Lights},
+    xplane::{input_params::Lights, inspector::rect_ext::RectExt},
 };
 
 use super::api::{update_widget, ApiResult};

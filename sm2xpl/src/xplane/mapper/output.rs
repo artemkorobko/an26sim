@@ -1,4 +1,4 @@
-use crate::{common::chain::Mapper, xplane::params::XPlaneOutputParams};
+use crate::{common::chain::Mapper, xplane::output_params::XPlaneOutputParams};
 
 #[derive(Default)]
 pub struct XPlaneSM2MOutputMapper;
