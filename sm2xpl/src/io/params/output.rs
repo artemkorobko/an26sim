@@ -28,9 +28,11 @@ mod test {
 
     #[test]
     fn should_write_params() {
-        let vec = Vec::new_output_params().terrain_distance(1).unwrap();
+        let distance = 1;
 
-        assert_eq!(vec, vec![1]);
+        let vec = Vec::new_output_params().terrain_distance(distance).unwrap();
+
+        assert_eq!(vec, vec![distance]);
     }
 
     #[test]

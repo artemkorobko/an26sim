@@ -27,6 +27,7 @@ impl BooleanDebouncer {
 impl Debouncer<bool> for BooleanDebouncer {
     fn debounce(&mut self, target: bool, delta: &Duration) -> bool {
         if self.is_bouncing(target) {
+            self.integration_time += *delta;
             if self.can_integrate() {
                 self.integrate(delta)
             } else {
@@ -37,8 +38,7 @@ impl Debouncer<bool> for BooleanDebouncer {
         }
     }
 
-    fn integrate(&mut self, delta: &Duration) -> bool {
-        self.integration_time += *delta;
+    fn integrate(&mut self, _: &Duration) -> bool {
         self.value
     }
 
@@ -46,5 +46,28 @@ impl Debouncer<bool> for BooleanDebouncer {
         self.integration_time = Duration::ZERO;
         self.value = target;
         self.value
+    }
+}
+
+mod test {
+    use super::*;
+
+    #[test]
+    fn should_integrate_during_the_timeout() {
+        let mut debouncer = BooleanDebouncer::default();
+
+        assert_eq!(debouncer.debounce(true, &Duration::ZERO), false);
+        assert_eq!(debouncer.debounce(false, &Duration::ZERO), false);
+        assert_eq!(debouncer.debounce(true, &Duration::ZERO), false);
+        assert_eq!(debouncer.debounce(false, &Duration::ZERO), false);
+    }
+
+    #[test]
+    fn should_assign_after_the_timeout() {
+        let mut debouncer = BooleanDebouncer::default();
+
+        assert_eq!(debouncer.debounce(true, &Duration::ZERO), false);
+        assert_eq!(debouncer.debounce(true, &MAX_BOUNCE_TIME), true);
+        assert_eq!(debouncer.debounce(false, &Duration::ZERO), true);
     }
 }
