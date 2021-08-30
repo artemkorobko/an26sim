@@ -13,11 +13,11 @@ pub struct BouncedGenerator<T> {
 }
 
 impl<T: PrimInt + SampleUniform> BouncedGenerator<T> {
-    pub fn new(step: T, min: T, max: T, dbs: usize, timeout: Duration) -> Self {
+    pub fn new(step: T, min: T, max: T, debounced_sequences: usize, timeout: Duration) -> Self {
         Self {
             gen: SequentialGenerator::new(step, min, max, timeout),
             sequences: 0,
-            debounced_sequences: dbs,
+            debounced_sequences,
         }
     }
 
