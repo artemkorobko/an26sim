@@ -72,7 +72,6 @@ where
         self.integration_time = Duration::ZERO;
         self.step = T::zero();
         self.value = target;
-        println!("assign");
         self.value
     }
 }

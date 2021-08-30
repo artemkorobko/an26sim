@@ -104,60 +104,60 @@ impl Default for XPlaneSM2MInputMapper {
 impl Mapper<XPlaneInputParams, Vec<u16>> for XPlaneSM2MInputMapper {
     fn map(&mut self, input: XPlaneInputParams) -> Vec<u16> {
         let mut params = Vec::with_capacity(18);
-        params.push(self.latitude_hi.reverse_bits());
-        params.push(self.latitude_hi.reverse_bits());
-        params.push(self.longitude_hi.reverse_bits());
-        params.push(self.longitude_lo.reverse_bits());
+        params.push(self.latitude_hi);
+        params.push(self.latitude_hi);
+        params.push(self.longitude_hi);
+        params.push(self.longitude_lo);
         let mut param = input.location.altitude.round() as u16;
-        params.push(param.reverse_bits());
+        params.push(param);
         param = input
             .orientation
             .heading
             .scale(0.0, 359.99, 0.0, 32767.0)
             .round() as u16;
-        params.push(param.reverse_bits());
+        params.push(param);
         param = input
             .orientation
             .pitch
             .scale(-45.0, 45.0, -32767.0, 32767.0)
             .round() as u16;
-        params.push(param.reverse_bits());
+        params.push(param);
         param = input
             .orientation
             .roll
             .scale(-90.0, 90.0, -32767.0, 32767.0)
             .round() as u16;
-        params.push(param.reverse_bits());
+        params.push(param);
         param = input
             .surfaces
             .ailerons
             .scale(-1.0, 1.0, -32767.0, 32767.0)
             .round() as u16;
-        params.push(param.reverse_bits());
+        params.push(param);
         param = input
             .surfaces
             .elevator
             .scale(-1.0, 1.0, -32767.0, 32767.0)
             .round() as u16;
-        params.push(param.reverse_bits());
+        params.push(param);
         param = input
             .surfaces
             .rudder
             .scale(-1.0, 1.0, -32767.0, 32767.0)
             .round() as u16;
-        params.push(param.reverse_bits());
+        params.push(param);
         param = input.surfaces.flaps.scale(0.0, 1.0, 0.0, 32767.0).round() as u16;
-        params.push(param.reverse_bits());
+        params.push(param);
         param = input.engines.left.scale(0.0, 166.0, 0.0, 32767.0).round() as u16;
-        params.push(param.reverse_bits());
+        params.push(param);
         param = input.engines.right.scale(0.0, 166.0, 0.0, 32767.0).round() as u16;
-        params.push(param.reverse_bits());
+        params.push(param);
         param = input.gears.front.scale(0.0, 1.0, 0.0, 32767.0).round() as u16;
-        params.push(param.reverse_bits());
+        params.push(param);
         param = input.gears.left.scale(0.0, 1.0, 0.0, 32767.0).round() as u16;
-        params.push(param.reverse_bits());
+        params.push(param);
         param = input.gears.right.scale(0.0, 1.0, 0.0, 32767.0).round() as u16;
-        params.push(param.reverse_bits());
+        params.push(param);
         let mut lights = 0;
         if input.lights.landing {
             lights = bit_set(lights, 0);
@@ -168,7 +168,7 @@ impl Mapper<XPlaneInputParams, Vec<u16>> for XPlaneSM2MInputMapper {
         if input.lights.beacon {
             lights = bit_set(lights, 2);
         }
-        params.push(lights.reverse_bits());
+        params.push(lights);
         params
     }
 }
