@@ -12,9 +12,9 @@ Install thr following vscode plugins: [Better TOML](https://marketplace.visualst
 [CodeLLDB](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb),
 [crates](https://marketplace.visualstudio.com/items?itemName=serayuzgur.crates),
 [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=matklad.rust-analyzer),
-[vscode-rustfmt](https://marketplace.visualstudio.com/items?itemName=statiolake.vscode-rustfmt),
-[Test Explorer UI](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-test-explorer),
-[GitLens](https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens).
+[vscode-rustfmt](https://marketplace.visualstudio.com/items?itemName=statiolake.vscode-rustfmt).
 
-Optional plugins: [Tabnine AI Code Completion](https://marketplace.visualstudio.com/items?itemName=TabNine.tabnine-vscode),
+Optional plugins: [Test Explorer UI](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-test-explorer),
+[GitLens](https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens),
+[Tabnine AI Code Completion](https://marketplace.visualstudio.com/items?itemName=TabNine.tabnine-vscode),
 [Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker).
