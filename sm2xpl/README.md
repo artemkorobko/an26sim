@@ -8,7 +8,11 @@ cargo build --release
 ```
 
 ### To test the plugin:
-- **For MacOS** copy `XPLM.framework` and `XPWidgets.framework` from the X-Plane SDK into the project root directory where `cargo.toml` is located.
+- **For MacOS** copy `XPLM.framework` and `XPWidgets.framework` from the X-Plane SDK (example: `~/.cargo/registry/src/github.com-<hash>/xplm-sys-<version>/SDK/Libraries/Mac`) into the `Resources/plugins` directory created right after `Cargo.toml`. Use the following script as an example:
+```bash
+mkdir -p ./Resources/plugins
+cp -r ~/.cargo/registry/src/github.com-1ecc6299db9ec823/xplm-sys-0.4.0/SDK/Libraries/Mac/* ./Resources/plugins
+```
 
 Run the following command
 ```bash
