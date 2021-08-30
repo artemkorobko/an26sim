@@ -47,10 +47,7 @@ where
 {
     fn debounce(&mut self, target: T, delta: &Duration) -> T {
         if self.is_bouncing(target) {
-            println!(
-                "bounced: V:{:?}, T:{:?}, B:{:?}",
-                self.value, target, self.barrier
-            );
+            self.integration_time += *delta;
             if self.can_integrate() {
                 self.integrate(delta)
             } else {
@@ -61,10 +58,8 @@ where
         }
     }
 
-    fn integrate(&mut self, delta: &Duration) -> T {
-        self.integration_time += *delta;
+    fn integrate(&mut self, _: &Duration) -> T {
         self.value = self.value + self.step;
-        println!("integrate: V:{:?}, S:{:?}", self.value, self.step);
         self.value
     }
 
@@ -73,5 +68,31 @@ where
         self.step = T::zero();
         self.value = target;
         self.value
+    }
+}
+
+mod test {
+    use super::*;
+
+    const BARRIER: f64 = 10.0;
+
+    #[test]
+    fn should_integrate_during_the_timeout() {
+        let mut debouncer = LinearDebouncer::new(BARRIER);
+
+        assert_eq!(debouncer.debounce(5.0, &Duration::ZERO), 5.0);
+        assert_eq!(debouncer.debounce(10.0, &Duration::ZERO), 10.0);
+        assert_eq!(debouncer.debounce(1000.0, &Duration::ZERO), 15.0);
+        assert_eq!(debouncer.debounce(1000.0, &Duration::ZERO), 20.0);
+        assert_eq!(debouncer.debounce(22.0, &Duration::ZERO), 22.0);
+    }
+
+    #[test]
+    fn should_assign_after_the_timeout() {
+        let mut debouncer = LinearDebouncer::new(BARRIER);
+
+        assert_eq!(debouncer.debounce(5.0, &Duration::ZERO), 5.0);
+        assert_eq!(debouncer.debounce(1000.0, &Duration::ZERO), 10.0);
+        assert_eq!(debouncer.debounce(50.0, &MAX_BOUNCE_TIME), 50.0);
     }
 }
