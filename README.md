@@ -21,5 +21,5 @@ Optional plugins: [Test Explorer UI](https://marketplace.visualstudio.com/items?
 [Tabnine AI Code Completion](https://marketplace.visualstudio.com/items?itemName=TabNine.tabnine-vscode),
 [Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker).
 
-# Projects
+# Software
 [SM2XPL](sm2xpl) - X-Plane plugin
