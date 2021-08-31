@@ -23,7 +23,7 @@ impl<T: Default> LinearDebouncer<T> {
 
 impl<T> LinearDebouncer<T>
 where
-    T: Default + Float + std::fmt::Debug,
+    T: Default + Float,
 {
     pub fn update(&mut self, target: T) -> T {
         self.integration_time = Duration::ZERO;
@@ -43,7 +43,7 @@ where
 
 impl<T> Debouncer<T> for LinearDebouncer<T>
 where
-    T: Default + Float + std::fmt::Debug,
+    T: Default + Float,
 {
     fn debounce(&mut self, target: T, delta: &Duration) -> T {
         if self.is_bouncing(target) {
@@ -71,28 +71,44 @@ where
     }
 }
 
+#[cfg(test)]
 mod test {
+    use float_eq::assert_float_eq;
+
     use super::*;
 
     const BARRIER: f64 = 10.0;
+    const PRECISION: f64 = 0.01;
 
     #[test]
     fn should_integrate_during_the_timeout() {
         let mut debouncer = LinearDebouncer::new(BARRIER);
 
-        assert_eq!(debouncer.debounce(5.0, &Duration::ZERO), 5.0);
-        assert_eq!(debouncer.debounce(10.0, &Duration::ZERO), 10.0);
-        assert_eq!(debouncer.debounce(1000.0, &Duration::ZERO), 15.0);
-        assert_eq!(debouncer.debounce(1000.0, &Duration::ZERO), 20.0);
-        assert_eq!(debouncer.debounce(22.0, &Duration::ZERO), 22.0);
+        let value = debouncer.debounce(5.0, &Duration::ZERO);
+        assert_float_eq!(value, 5.0, abs <= PRECISION);
+        let value = debouncer.debounce(10.0, &Duration::ZERO);
+        assert_float_eq!(value, 10.0, abs <= PRECISION);
+        let value = debouncer.debounce(1000.0, &Duration::ZERO);
+        assert_float_eq!(value, 15.0, abs <= PRECISION);
+        let value = debouncer.debounce(20.0, &Duration::ZERO);
+        assert_float_eq!(value, 20.0, abs <= PRECISION);
+        let value = debouncer.debounce(15.0, &Duration::ZERO);
+        assert_float_eq!(value, 15.0, abs <= PRECISION);
+        let value = debouncer.debounce(1000.0, &Duration::ZERO);
+        assert_float_eq!(value, 10.0, abs <= PRECISION);
+        let value = debouncer.debounce(5.0, &Duration::ZERO);
+        assert_float_eq!(value, 5.0, abs <= PRECISION);
     }
 
     #[test]
     fn should_assign_after_the_timeout() {
         let mut debouncer = LinearDebouncer::new(BARRIER);
 
-        assert_eq!(debouncer.debounce(5.0, &Duration::ZERO), 5.0);
-        assert_eq!(debouncer.debounce(1000.0, &Duration::ZERO), 10.0);
-        assert_eq!(debouncer.debounce(50.0, &MAX_BOUNCE_TIME), 50.0);
+        let value = debouncer.debounce(5.0, &Duration::ZERO);
+        assert_float_eq!(value, 5.0, abs <= PRECISION);
+        let value = debouncer.debounce(1000.0, &Duration::ZERO);
+        assert_float_eq!(value, 10.0, abs <= PRECISION);
+        let value = debouncer.debounce(50.0, &MAX_BOUNCE_TIME);
+        assert_float_eq!(value, 50.0, abs <= PRECISION);
     }
 }

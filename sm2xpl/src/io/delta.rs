@@ -19,6 +19,7 @@ impl Supplier<Duration> for DeltaTimeSupplier {
     }
 }
 
+#[cfg(test)]
 mod test {
     use super::*;
 

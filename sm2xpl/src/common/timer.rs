@@ -52,6 +52,7 @@ impl DeltaCounter {
     }
 }
 
+#[cfg(test)]
 mod test {
     use super::*;
 

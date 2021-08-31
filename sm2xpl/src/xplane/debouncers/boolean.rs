@@ -49,6 +49,7 @@ impl Debouncer<bool> for BooleanDebouncer {
     }
 }
 
+#[cfg(test)]
 mod test {
     use super::*;
 

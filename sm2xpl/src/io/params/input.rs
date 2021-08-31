@@ -107,6 +107,7 @@ impl InputParams for Vec<u16> {
     }
 }
 
+#[cfg(test)]
 mod test {
     use super::*;
 

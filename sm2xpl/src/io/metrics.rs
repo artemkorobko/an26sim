@@ -29,8 +29,13 @@ impl IOMetrics {
     }
 }
 
+#[cfg(test)]
 mod test {
+    use float_eq::assert_float_eq;
+
     use super::*;
+
+    const PRECISION: f32 = 0.001;
 
     #[test]
     fn should_calc_bps() {
@@ -40,7 +45,7 @@ mod test {
         let bps1 = metrics.bps(&Duration::from_millis(500));
         let bps2 = metrics.bps(&Duration::from_millis(500));
 
-        assert!(bps1 > 19.99 && bps1 < 20.01);
-        assert_eq!(bps2, 0.0);
+        assert_float_eq!(bps1, 20.00, abs <= PRECISION);
+        assert_float_eq!(bps2, 0.0, abs <= PRECISION);
     }
 }

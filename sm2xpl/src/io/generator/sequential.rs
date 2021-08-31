@@ -77,6 +77,7 @@ impl<T: PrimInt> Generator<T> for SequentialGenerator<T> {
     }
 }
 
+#[cfg(test)]
 mod test {
     use super::*;
 

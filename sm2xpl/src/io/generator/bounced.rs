@@ -56,6 +56,7 @@ impl<T: PrimInt + SampleUniform> Generator<T> for BouncedGenerator<T> {
     }
 }
 
+#[cfg(test)]
 mod test {
     use super::*;
 

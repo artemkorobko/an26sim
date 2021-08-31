@@ -25,7 +25,9 @@ impl XPlaneParamDebouncer {
 
     fn debounce(&mut self, target: XPlaneInputParams) -> XPlaneInputParams {
         if let Some(params) = &mut self.params {
-            let delta = Instant::now().duration_since(self.last_debounce);
+            let now = Instant::now();
+            let delta = now.duration_since(self.last_debounce);
+            self.last_debounce = now;
             params.debounce(target, &delta)
         } else {
             let mut params = DebouncedParams::default();
