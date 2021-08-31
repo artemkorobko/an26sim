@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use num_traits::Float;
 
-use super::{generic::Debouncer, MAX_BOUNCE_TIME};
+use super::{generic::Debouncer, MAX_INTEGRATION_TIME};
 
 #[derive(Default)]
 pub struct LinearDebouncer<T: Default> {
@@ -12,7 +12,10 @@ pub struct LinearDebouncer<T: Default> {
     pub integration_time: Duration,
 }
 
-impl<T: Default> LinearDebouncer<T> {
+impl<T> LinearDebouncer<T>
+where
+    T: Default + Float + std::fmt::Debug,
+{
     pub fn new(barrier: T) -> Self {
         Self {
             barrier,
@@ -23,7 +26,7 @@ impl<T: Default> LinearDebouncer<T> {
 
 impl<T> LinearDebouncer<T>
 where
-    T: Default + Float,
+    T: Default + Float + std::fmt::Debug,
 {
     pub fn update(&mut self, target: T) -> T {
         self.integration_time = Duration::ZERO;
@@ -33,17 +36,17 @@ where
     }
 
     fn is_bouncing(&self, target: T) -> bool {
-        target.abs_sub(self.value) >= self.barrier
+        (target - self.value).abs() >= self.barrier
     }
 
     fn can_integrate(&self) -> bool {
-        self.integration_time < MAX_BOUNCE_TIME
+        self.integration_time < MAX_INTEGRATION_TIME
     }
 }
 
 impl<T> Debouncer<T> for LinearDebouncer<T>
 where
-    T: Default + Float,
+    T: Default + Float + std::fmt::Debug,
 {
     fn debounce(&mut self, target: T, delta: &Duration) -> T {
         if self.is_bouncing(target) {
@@ -94,7 +97,7 @@ mod test {
         assert_float_eq!(value, 20.0, abs <= PRECISION);
         let value = debouncer.debounce(15.0, &Duration::ZERO);
         assert_float_eq!(value, 15.0, abs <= PRECISION);
-        let value = debouncer.debounce(1000.0, &Duration::ZERO);
+        let value = debouncer.debounce(-1000.0, &Duration::ZERO);
         assert_float_eq!(value, 10.0, abs <= PRECISION);
         let value = debouncer.debounce(5.0, &Duration::ZERO);
         assert_float_eq!(value, 5.0, abs <= PRECISION);
@@ -108,7 +111,7 @@ mod test {
         assert_float_eq!(value, 5.0, abs <= PRECISION);
         let value = debouncer.debounce(1000.0, &Duration::ZERO);
         assert_float_eq!(value, 10.0, abs <= PRECISION);
-        let value = debouncer.debounce(50.0, &MAX_BOUNCE_TIME);
+        let value = debouncer.debounce(50.0, &MAX_INTEGRATION_TIME);
         assert_float_eq!(value, 50.0, abs <= PRECISION);
     }
 }

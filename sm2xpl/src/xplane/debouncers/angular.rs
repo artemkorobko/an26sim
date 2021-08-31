@@ -87,7 +87,7 @@ where
 mod test {
     use float_eq::assert_float_eq;
 
-    use crate::xplane::debouncers::MAX_BOUNCE_TIME;
+    use crate::xplane::debouncers::MAX_INTEGRATION_TIME;
 
     use super::*;
 
@@ -95,7 +95,7 @@ mod test {
     const PRECISION: f64 = 0.01;
 
     #[test]
-    fn should_integrate_not_on_edge_during_the_timeout() {
+    fn should_integrate_during_the_timeout() {
         let mut debouncer = AngularDebouncer::new(BARRIER);
 
         let value = debouncer.debounce(5.0, &Duration::ZERO);
@@ -110,7 +110,7 @@ mod test {
         assert_float_eq!(value, 25.0, abs <= PRECISION);
         let value = debouncer.debounce(20.0, &Duration::ZERO);
         assert_float_eq!(value, 20.0, abs <= PRECISION);
-        let value = debouncer.debounce(1000.0, &Duration::ZERO);
+        let value = debouncer.debounce(-1000.0, &Duration::ZERO);
         assert_float_eq!(value, 15.0, abs <= PRECISION);
         let value = debouncer.debounce(10.0, &Duration::ZERO);
         assert_float_eq!(value, 10.0, abs <= PRECISION);
@@ -128,7 +128,7 @@ mod test {
         assert_float_eq!(value, 15.0, abs <= PRECISION);
         let value = debouncer.debounce(1000.0, &Duration::ZERO);
         assert_float_eq!(value, 20.0, abs <= PRECISION);
-        let value = debouncer.debounce(50.0, &MAX_BOUNCE_TIME);
+        let value = debouncer.debounce(50.0, &MAX_INTEGRATION_TIME);
         assert_float_eq!(value, 50.0, abs <= PRECISION);
     }
 

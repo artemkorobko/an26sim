@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use super::{generic::Debouncer, MAX_BOUNCE_TIME};
+use super::{generic::Debouncer, MAX_INTEGRATION_TIME};
 
 #[derive(Default)]
 pub struct BooleanDebouncer {
@@ -20,7 +20,7 @@ impl BooleanDebouncer {
     }
 
     fn can_integrate(&mut self) -> bool {
-        self.integration_time < MAX_BOUNCE_TIME
+        self.integration_time < MAX_INTEGRATION_TIME
     }
 }
 
@@ -68,7 +68,7 @@ mod test {
         let mut debouncer = BooleanDebouncer::default();
 
         assert_eq!(debouncer.debounce(true, &Duration::ZERO), false);
-        assert_eq!(debouncer.debounce(true, &MAX_BOUNCE_TIME), true);
+        assert_eq!(debouncer.debounce(true, &MAX_INTEGRATION_TIME), true);
         assert_eq!(debouncer.debounce(false, &Duration::ZERO), true);
     }
 }

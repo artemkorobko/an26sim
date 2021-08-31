@@ -30,10 +30,10 @@ impl USBParamGenerator {
             GeneratorType::ConstU16(0), // Latitude LO
             GeneratorType::ConstU16(0), // Longitude HI
             GeneratorType::ConstU16(0), // Longitude LO
-            // GeneratorType::ConstU16(0),
-            GeneratorType::RangeU16(BouncedGenerator::new(1, 0, 8000, 10, GEN_TIMEOUT * 2)), // Altitude
             GeneratorType::ConstU16(0),
-            // GeneratorType::RangeU16(Generator::new(35, 0, 32767, GEN_TIMEOUT)), // Heading
+            // GeneratorType::RangeU16(BouncedGenerator::new(1, 0, 8000, 10, GEN_TIMEOUT * 2)), // Altitude
+            // GeneratorType::ConstU16(0),
+            GeneratorType::RangeU16(BouncedGenerator::new(35, 0, 32767, 10, GEN_TIMEOUT)), // Heading
             GeneratorType::ConstU16(0),
             // GeneratorType::RangeI16(Generator::new(350, -32767, 32767, GEN_TIMEOUT)), // Pitch
             GeneratorType::ConstU16(0),

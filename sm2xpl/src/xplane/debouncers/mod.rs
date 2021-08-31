@@ -5,4 +5,4 @@ pub mod boolean;
 pub mod generic;
 pub mod linear;
 
-const MAX_BOUNCE_TIME: Duration = Duration::from_secs(3);
+const MAX_INTEGRATION_TIME: Duration = Duration::from_secs(3);
