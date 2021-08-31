@@ -1,0 +1,33 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-plugin",
+      "type": "shell",
+      "options": {
+        "cwd": "${workspaceFolder}/sm2xpl"
+      },
+      "command": "cargo",
+      "args": [
+        "build"
+      ]
+    },
+    {
+      "label": "deploy-plugin",
+      "type": "shell",
+      "command": "cp",
+      "options": {
+        "cwd": "${workspaceFolder}/sm2xpl"
+      },
+      "args": [
+        "./target/debug/libsm2.dylib",
+        "/Applications/XPlane11/Resources/plugins/sm2.xpl"
+      ],
+      "dependsOn": ["deploy-plugin"]
+    },
+    {
+      "label": "prepare-plugin",
+      "dependsOn": ["build-plugin"]
+    }
+  ]
+}
