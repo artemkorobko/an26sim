@@ -22,4 +22,4 @@ Optional plugins: [Test Explorer UI](https://marketplace.visualstudio.com/items?
 [Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker).
 
 # Projects
-[SM2XPL](sm2xpl/README.md) - X-Plane plugin
+[SM2XPL](sm2xpl) - X-Plane plugin
