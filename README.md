@@ -1,5 +1,7 @@
 # Antonov 26 Simulator
-This repository contains the software
+This repository contains software that implements Visualization system for Antonov An-26 simulator.
+
+![An-26 Simulator](doc/sim.jpg "An-26 Simulator")
 
 # Prerequisities
 ## Rust
@@ -18,3 +20,6 @@ Optional plugins: [Test Explorer UI](https://marketplace.visualstudio.com/items?
 [GitLens](https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens),
 [Tabnine AI Code Completion](https://marketplace.visualstudio.com/items?itemName=TabNine.tabnine-vscode),
 [Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker).
+
+# Projects
+[SM2XPL](sm2xpl/README.md) - X-Plane plugin
