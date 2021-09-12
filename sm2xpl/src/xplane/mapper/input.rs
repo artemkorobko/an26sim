@@ -1,174 +1,148 @@
 use crate::{
     common::{chain::Mapper, percent::Percent},
-    io::params::generic::{InputParams, ParamsIOResult},
-    xplane::input_params::XPlaneInputParams,
+    io::input_params::{InputParamType, InputParameter},
+    xplane::{input_params::XPlaneInputParams, mapper::bit::bit_test},
 };
 
-use super::bit::{bit_set, bit_test};
-
-#[derive(Default)]
-pub struct SM2MXPlaneInputMapper;
+pub struct SM2MXPlaneInputMapper {
+    default: XPlaneInputParams,
+}
 
 impl SM2MXPlaneInputMapper {
-    fn map(input: Vec<u16>) -> ParamsIOResult<XPlaneInputParams> {
-        let mut params = XPlaneInputParams::default();
-        let mut reversed = input.latitude_hi()?.reverse_bits();
-        let mut hi = (reversed as i16 as f64).scale(0.0, 32768.0, 0.0, 90.0);
-        reversed = input.latitude_lo()?.reverse_bits();
-        let mut lo = (reversed as f64).scale(0.0, 65535.0, 0.0, 0.0027465);
-        params.location.latitude = hi + lo;
-        reversed = input.longitude_hi()?.reverse_bits();
-        hi = (reversed as i16 as f64).scale(0.0, 32768.0, 0.0, 360.0);
-        reversed = input.longitude_lo()?.reverse_bits();
-        lo = (reversed as f64).scale(0.0, 65535.0, 0.0, 0.010985);
-        params.location.longitude = hi + lo;
-        reversed = input.altitude()?.reverse_bits();
-        params.location.altitude = reversed as f64;
-        reversed = input.heading()?.reverse_bits();
-        params.orientation.heading = (reversed as f32).scale(0.0, 32767.0, 0.0, 359.99);
-        reversed = input.pitch()?.reverse_bits();
-        params.orientation.pitch = (reversed as i16 as f32).scale(-32767.0, 32767.0, -45.0, 45.0);
-        reversed = input.roll()?.reverse_bits();
-        params.orientation.roll = (reversed as i16 as f32).scale(-32767.0, 32767.0, -90.0, 90.0);
-        reversed = input.ailerons()?.reverse_bits();
-        params.surfaces.ailerons = (reversed as i16 as f32).scale(-32767.0, 32767.0, -1.0, 1.0);
-        reversed = input.elevator()?.reverse_bits();
-        params.surfaces.elevator = (reversed as i16 as f32).scale(-32767.0, 32767.0, -1.0, 1.0);
-        reversed = input.rudder()?.reverse_bits();
-        params.surfaces.rudder = (reversed as i16 as f32).scale(-32767.0, 32767.0, -1.0, 1.0);
-        reversed = input.flaps()?.reverse_bits();
-        params.surfaces.flaps = (reversed as f32).scale(0.0, 32767.0, 0.0, 1.0);
-        reversed = input.engine_left()?.reverse_bits();
-        params.engines.left = (reversed as f32).scale(0.0, 32767.0, 0.0, 166.0);
-        reversed = input.engine_right()?.reverse_bits();
-        params.engines.right = (reversed as f32).scale(0.0, 32767.0, 0.0, 166.0);
-        reversed = input.gear_front()?.reverse_bits();
-        params.gears.front = (reversed as f32).scale(0.0, 32767.0, 0.0, 1.0);
-        reversed = input.gear_left()?.reverse_bits();
-        params.gears.left = (reversed as f32).scale(0.0, 32767.0, 0.0, 1.0);
-        reversed = input.gear_right()?.reverse_bits();
-        params.gears.right = (reversed as f32).scale(0.0, 32767.0, 0.0, 1.0);
-        reversed = input.lights()?.reverse_bits();
-        params.lights.landing = bit_test(reversed, 0);
-        params.lights.navigation = bit_test(reversed, 1);
-        params.lights.beacon = bit_test(reversed, 2);
-        params.reset = bit_test(input.reset()?.reverse_bits(), 0);
-        Ok(params)
+    pub fn new(default: XPlaneInputParams) -> Self {
+        Self { default }
     }
-}
 
-impl Mapper<Option<Vec<u16>>, Option<XPlaneInputParams>> for SM2MXPlaneInputMapper {
-    fn map(&mut self, input: Option<Vec<u16>>) -> Option<XPlaneInputParams> {
-        input.and_then(|params| {
-            let result = Self::map(params);
-            match result {
-                Ok(mapped) => Some(mapped),
-                Err(error) => {
-                    xplm::debugln!("{}", error.to_string());
-                    None
+    fn map_params(&self, input: Vec<InputParameter>) -> XPlaneInputParams {
+        let mut params = self.default;
+        for param in input {
+            match param.ip_type {
+                InputParamType::LatitudeHi => {
+                    params.latitude += (param.value as f64).scale(0.0, 32768.0, 0.0, 90.0)
+                }
+                InputParamType::LatitudeLo => {
+                    params.latitude += (param.value as f64).scale(0.0, 65535.0, 0.0, 0.0027465);
+                }
+                InputParamType::LongitudeHi => {
+                    params.longitude += (param.value as f64).scale(0.0, 32768.0, 0.0, 360.0);
+                }
+                InputParamType::LongitudeLo => {
+                    params.longitude += (param.value as f64).scale(0.0, 65535.0, 0.0, 0.010985);
+                }
+                InputParamType::Altitude => {
+                    params.altitude = param.value as f64;
+                }
+                InputParamType::Heading => {
+                    params.heading = (param.value as f32).scale(0.0, 32767.0, 0.0, 359.99);
+                }
+                InputParamType::Pitch => {
+                    params.heading = (param.value as f32).scale(-32767.0, 32767.0, -45.0, 45.0);
+                }
+                InputParamType::Roll => {
+                    params.heading = (param.value as f32).scale(-32767.0, 32767.0, -90.0, 90.0);
+                }
+                InputParamType::Ailerons => {
+                    params.heading = (param.value as f32).scale(-32767.0, 32767.0, -1.0, 1.0);
+                }
+                InputParamType::Elevator => {
+                    params.heading = (param.value as f32).scale(-32767.0, 32767.0, -1.0, 1.0);
+                }
+                InputParamType::Rudder => {
+                    params.heading = (param.value as f32).scale(-32767.0, 32767.0, -1.0, 1.0);
+                }
+                InputParamType::Flaps => {
+                    params.heading = (param.value as f32).scale(0.0, 32767.0, 0.0, 1.0);
+                }
+                InputParamType::EngineLeft => {
+                    params.heading = (param.value as f32).scale(0.0, 32767.0, 0.0, 166.0);
+                }
+                InputParamType::EngineRight => {
+                    params.heading = (param.value as f32).scale(0.0, 32767.0, 0.0, 166.0);
+                }
+                InputParamType::GearFront => {
+                    params.heading = (param.value as f32).scale(0.0, 32767.0, 0.0, 1.0);
+                }
+                InputParamType::GearLeft => {
+                    params.heading = (param.value as f32).scale(0.0, 32767.0, 0.0, 1.0);
+                }
+                InputParamType::GearRight => {
+                    params.heading = (param.value as f32).scale(0.0, 32767.0, 0.0, 1.0);
+                }
+                InputParamType::Lights => {
+                    params.light_landing = bit_test(param.value, 0);
+                    params.light_navigation = bit_test(param.value, 1);
+                    params.light_beacon = bit_test(param.value, 2);
+                }
+                InputParamType::Reset => {
+                    params.reset = bit_test(param.value, 0);
                 }
             }
-        })
-    }
-}
-
-pub struct XPlaneSM2MInputMapper {
-    pub latitude_hi: u16,
-    pub latitude_lo: u16,
-    pub longitude_hi: u16,
-    pub longitude_lo: u16,
-}
-
-impl XPlaneSM2MInputMapper {
-    pub fn new(latitude_hi: u16, latitude_lo: u16, longitude_hi: u16, longitude_lo: u16) -> Self {
-        Self {
-            latitude_hi,
-            latitude_lo,
-            longitude_hi,
-            longitude_lo,
         }
-    }
-}
-
-impl Default for XPlaneSM2MInputMapper {
-    fn default() -> Self {
-        Self {
-            latitude_hi: 17606,
-            latitude_lo: 21450,
-            longitude_hi: 3193,
-            longitude_lo: 15130,
-        }
-    }
-}
-
-impl Mapper<XPlaneInputParams, Vec<u16>> for XPlaneSM2MInputMapper {
-    fn map(&mut self, input: XPlaneInputParams) -> Vec<u16> {
-        let mut params = Vec::with_capacity(18);
-        params.push(self.latitude_hi);
-        params.push(self.latitude_hi);
-        params.push(self.longitude_hi);
-        params.push(self.longitude_lo);
-        let mut param = input.location.altitude.round() as u16;
-        params.push(param);
-        param = input
-            .orientation
-            .heading
-            .scale(0.0, 359.99, 0.0, 32767.0)
-            .round() as u16;
-        params.push(param);
-        param = input
-            .orientation
-            .pitch
-            .scale(-45.0, 45.0, -32767.0, 32767.0)
-            .round() as u16;
-        params.push(param);
-        param = input
-            .orientation
-            .roll
-            .scale(-90.0, 90.0, -32767.0, 32767.0)
-            .round() as u16;
-        params.push(param);
-        param = input
-            .surfaces
-            .ailerons
-            .scale(-1.0, 1.0, -32767.0, 32767.0)
-            .round() as u16;
-        params.push(param);
-        param = input
-            .surfaces
-            .elevator
-            .scale(-1.0, 1.0, -32767.0, 32767.0)
-            .round() as u16;
-        params.push(param);
-        param = input
-            .surfaces
-            .rudder
-            .scale(-1.0, 1.0, -32767.0, 32767.0)
-            .round() as u16;
-        params.push(param);
-        param = input.surfaces.flaps.scale(0.0, 1.0, 0.0, 32767.0).round() as u16;
-        params.push(param);
-        param = input.engines.left.scale(0.0, 166.0, 0.0, 32767.0).round() as u16;
-        params.push(param);
-        param = input.engines.right.scale(0.0, 166.0, 0.0, 32767.0).round() as u16;
-        params.push(param);
-        param = input.gears.front.scale(0.0, 1.0, 0.0, 32767.0).round() as u16;
-        params.push(param);
-        param = input.gears.left.scale(0.0, 1.0, 0.0, 32767.0).round() as u16;
-        params.push(param);
-        param = input.gears.right.scale(0.0, 1.0, 0.0, 32767.0).round() as u16;
-        params.push(param);
-        let mut lights = 0;
-        if input.lights.landing {
-            lights = bit_set(lights, 0);
-        }
-        if input.lights.navigation {
-            lights = bit_set(lights, 1);
-        }
-        if input.lights.beacon {
-            lights = bit_set(lights, 2);
-        }
-        params.push(lights);
         params
+    }
+}
+
+impl Mapper<Option<Vec<InputParameter>>, Option<XPlaneInputParams>> for SM2MXPlaneInputMapper {
+    fn map(&mut self, input: Option<Vec<InputParameter>>) -> Option<XPlaneInputParams> {
+        input.and_then(|params| Some(self.map_params(params)))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_map_default_params() {
+        let default = Default::default();
+        let mut mapper = SM2MXPlaneInputMapper::new(default);
+
+        let params = mapper.map(Some(Vec::new())).unwrap();
+
+        assert_eq!(params, default);
+    }
+
+    #[test]
+    fn should_return_none_when_input_params_are_absent() {
+        let mut mapper = default_mapper();
+
+        let params = mapper.map(None);
+
+        assert!(params.is_none());
+    }
+
+    #[test]
+    fn should_map_latitude() {}
+
+    #[test]
+    fn should_map_longitude() {}
+
+    #[test]
+    fn should_map_altitude() {
+        let mut mapper = default_mapper();
+        let input = input_with_param(InputParamType::Altitude, 100);
+
+        let params = mapper.map(input).unwrap();
+
+        assert_eq!(params.altitude, 100.0);
+    }
+
+    #[test]
+    fn should_map_heading() {
+        // println!("{}", 250.0f32.scale(0.0, 359.99, 0.0, 32767.0));
+        let mut mapper = default_mapper();
+        let input = input_with_param(InputParamType::Heading, 22755);
+
+        let params = mapper.map(input).unwrap();
+
+        assert_eq!(params.heading, 250.0);
+    }
+
+    fn default_mapper() -> SM2MXPlaneInputMapper {
+        SM2MXPlaneInputMapper::new(Default::default())
+    }
+
+    fn input_with_param(ip_type: InputParamType, value: i16) -> Option<Vec<InputParameter>> {
+        Some(vec![InputParameter { ip_type, value }])
     }
 }

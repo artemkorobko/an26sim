@@ -2,9 +2,9 @@ use xplm::geometry::Rect;
 use xplm_sys::XPWidgetID;
 
 use crate::{
-    label,
+    create_label,
     xplane::{
-        input_params::General,
+        dataref::variables::general::GeneralDataRef,
         inspector::{api::update_widget, rect_ext::RectExt},
     },
 };
@@ -18,15 +18,17 @@ pub struct GeneralBlock {
 
 impl GeneralBlock {
     pub fn new(parent: XPWidgetID, rect: &Rect<i32>) -> ApiResult<(Self, Rect<i32>)> {
-        let fps = label!("FPS:", parent, &rect);
+        let fps = create_label!("FPS:", parent, &rect);
         let rect = rect.to_next_line();
-        let physics = label!("Physics:", parent, &rect);
-        Ok((Self { fps, physics }, rect))
+        let physics = create_label!("Physics:", parent, &rect);
+        let block = Self { fps, physics };
+        Ok((block, rect))
     }
 
-    pub fn update(&self, general: &General) -> ApiResult<()> {
-        update_widget(self.fps, &format!("{:.2}", general.fps))?;
-        update_widget(self.physics, format_enabled(general.physics))
+    pub fn update(&self, general: &GeneralDataRef) -> ApiResult<()> {
+        update_widget(self.fps, &format!("{:.2}", general.fps()))?;
+        update_widget(self.physics, format_enabled(general.is_physics_enabled()))?;
+        Ok(())
     }
 }
 

@@ -1,8 +1,8 @@
-pub fn bit_test(value: u16, index: u16) -> bool {
+pub fn bit_test(value: i16, index: i16) -> bool {
     (value >> index) & 0b1 == 1
 }
 
-pub fn bit_set(value: u16, index: u16) -> u16 {
+pub fn bit_set(value: i16, index: i16) -> i16 {
     let mask = 1 << index;
     value | mask
 }

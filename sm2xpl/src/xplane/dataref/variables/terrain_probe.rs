@@ -23,7 +23,7 @@ impl TerrainProbe {
         }
     }
 
-    pub fn distance(&self, x: f64, y: f64, z: f64) -> f32 {
+    pub fn distance(&self, x: f64, y: f64, z: f64) -> f64 {
         let x = x as f32;
         let y = y as f32;
         let z = z as f32;
@@ -44,7 +44,8 @@ impl TerrainProbe {
         let result = unsafe { XPLMProbeTerrainXYZ(self.id, x, y, z, &mut info) };
         const PROBE_RESULT_TERRAIN: XPLMProbeResult = xplm_ProbeHitTerrain as XPLMProbeResult;
         if result == PROBE_RESULT_TERRAIN {
-            y - info.locationY - self.cabin_alt
+            let distance = y - info.locationY - self.cabin_alt;
+            distance as f64
         } else {
             0.0
         }

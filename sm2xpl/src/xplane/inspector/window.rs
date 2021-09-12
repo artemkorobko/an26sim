@@ -4,9 +4,7 @@ use xplm::geometry::Rect;
 use xplm_sys::*;
 
 use crate::{
-    io::metrics::IOMetrics,
-    plugin_event::PluginEvent,
-    xplane::input_params::{General, View, XPlaneInputParams},
+    io::metrics::IOMetrics, plugin_event::PluginEvent, xplane::dataref::collection::DataRefs,
 };
 
 use super::{
@@ -54,16 +52,12 @@ impl InspectorWindow {
 
     pub fn update(
         &self,
-        params: &XPlaneInputParams,
-        general: &General,
-        view: &View,
-        terrain: f32,
+        data_refs: &DataRefs,
         input: &mut IOMetrics,
         output: &mut IOMetrics,
         delta: &Duration,
     ) -> ApiResult<()> {
-        self.widgets
-            .update(params, general, view, terrain, input, output, delta)
+        self.widgets.update(data_refs, input, output, delta)
     }
 
     fn register_close_handler(&self) {

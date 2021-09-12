@@ -1,122 +1,125 @@
 use std::time::Duration;
 
-use num_traits::PrimInt;
-
-use crate::common::timer::DeltaCounter;
+use crate::common::timer::{DeltaCounter, Elapsed};
 
 use super::generic::Generator;
 
-#[derive(Copy, Clone)]
 enum Operation {
     Increase,
     Decrease,
 }
 
-#[derive(Copy, Clone)]
-pub struct SequentialGenerator<T> {
-    param: T,
-    step: T,
-    min: T,
-    max: T,
+enum GeneratorResult {
+    Ok(i16),
+    Overflow,
+}
+
+pub struct SequentialGenerator {
+    value: i16,
+    step: i16,
+    time: DeltaCounter,
     operation: Operation,
-    timer: DeltaCounter,
 }
 
-impl<T: PrimInt> SequentialGenerator<T> {
-    pub fn new(step: T, min: T, max: T, timeout: Duration) -> Self {
+impl SequentialGenerator {
+    pub fn new(default: i16, step: i16, delay: Duration) -> Self {
         Self {
-            param: T::zero(),
+            value: default,
             step,
-            min,
-            max,
+            time: DeltaCounter::deferred(delay),
             operation: Operation::Increase,
-            timer: DeltaCounter::deferred(timeout),
         }
     }
 
-    pub fn min(&self) -> T {
-        self.min
+    fn generate_value(&self) -> GeneratorResult {
+        let (value, overflow) = match self.operation {
+            Operation::Increase => self.value.overflowing_add(self.step),
+            Operation::Decrease => self.value.overflowing_sub(self.step),
+        };
+
+        match overflow {
+            true => GeneratorResult::Overflow,
+            false => GeneratorResult::Ok(value),
+        }
     }
 
-    pub fn max(&self) -> T {
-        self.max
-    }
-
-    fn reverse_operation(&mut self) {
+    fn reverse_operation(&self) -> Operation {
         match self.operation {
-            Operation::Increase => self.operation = Operation::Decrease,
-            Operation::Decrease => self.operation = Operation::Increase,
+            Operation::Increase => Operation::Decrease,
+            Operation::Decrease => Operation::Increase,
         }
     }
 }
 
-impl<T: PrimInt> Generator<T> for SequentialGenerator<T> {
-    fn generate(&mut self, delta: &Duration) -> T {
-        if self.timer.count(&delta).is_elapsed() {
-            let result = match self.operation {
-                Operation::Increase => self.param.checked_add(&self.step),
-                Operation::Decrease => self.param.checked_sub(&self.step),
-            };
-
-            if let Some(param) = result {
-                if param < self.min || param > self.max {
-                    self.reverse_operation();
-                } else {
-                    self.param = param;
+impl Generator for SequentialGenerator {
+    fn generate(&mut self, delta: Duration) -> i16 {
+        match self.time.count(delta.clone()) {
+            Elapsed::Yes(diff) => {
+                self.time.count(diff);
+                match self.generate_value() {
+                    GeneratorResult::Ok(value) => {
+                        self.value = value;
+                        self.value
+                    }
+                    GeneratorResult::Overflow => {
+                        self.operation = self.reverse_operation();
+                        self.generate(delta)
+                    }
                 }
-            } else {
-                self.reverse_operation();
             }
+            Elapsed::No => self.value,
         }
-
-        self.param
-    }
-
-    fn reset(&mut self, param: T) {
-        self.param = param;
     }
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
-    const STEP: i32 = 3;
-    const MIN: i32 = 0;
-    const MAX: i32 = 10;
-
     #[test]
-    fn should_generate_in_all_directions() {
-        let timeout = Duration::from_secs(1);
-        let mut generator = SequentialGenerator::new(STEP, MIN, MAX, timeout);
+    fn should_generate_value() {
+        let default = 50;
+        let step = 10;
+        let delay = Duration::from_secs(1);
+        let mut generator = SequentialGenerator::new(default, step, delay);
 
-        assert_eq!(generator.generate(&timeout), 3);
-        assert_eq!(generator.generate(&timeout), 6);
-        assert_eq!(generator.generate(&timeout), 9);
-        assert_eq!(generator.generate(&timeout), 9);
-        assert_eq!(generator.generate(&timeout), 6);
-        assert_eq!(generator.generate(&timeout), 3);
-        assert_eq!(generator.generate(&timeout), 0);
+        let value = generator.generate(Duration::ZERO);
+        assert_eq!(value, default);
+
+        let value = generator.generate(delay);
+        assert_eq!(value, default + step);
     }
 
     #[test]
-    fn should_generate_only_within_interval() {
-        let mut generator = SequentialGenerator::new(STEP, MIN, MAX, Duration::from_secs(1));
+    fn should_reverse_direction_on_max_overflow() {
+        let step = 5;
+        let delay = Duration::from_secs(1);
+        let mut generator = SequentialGenerator::new(i16::MAX - step, step, delay);
 
-        assert_eq!(generator.generate(&Duration::from_millis(500)), 0);
-        assert_eq!(generator.generate(&Duration::from_millis(400)), 0);
-        assert_eq!(generator.generate(&Duration::from_millis(200)), 3);
+        let value = generator.generate(Duration::ZERO);
+        assert_eq!(value, i16::MAX - step);
+
+        let value = generator.generate(delay.clone());
+        assert_eq!(value, i16::MAX);
+
+        let value = generator.generate(delay);
+        assert_eq!(value, i16::MAX - step);
     }
 
     #[test]
-    fn should_reset_parameter() {
-        let duration = Duration::from_secs(1);
-        let mut generator = SequentialGenerator::new(STEP, MIN, MAX, duration);
+    fn should_reverse_direction_on_min_overflow() {
+        let step = 8;
+        let delay = Duration::from_secs(1);
+        let mut generator = SequentialGenerator::new(i16::MIN + step, step, delay);
+        generator.operation = Operation::Decrease;
 
-        assert_eq!(generator.generate(&duration), 3);
-        assert_eq!(generator.generate(&duration), 6);
-        generator.reset(1);
-        assert_eq!(generator.generate(&duration), 4);
-        assert_eq!(generator.generate(&duration), 7);
+        let value = generator.generate(Duration::ZERO);
+        assert_eq!(value, i16::MIN + step);
+
+        let value = generator.generate(delay.clone());
+        assert_eq!(value, i16::MIN);
+
+        let value = generator.generate(delay);
+        assert_eq!(value, i16::MIN + step);
     }
 }

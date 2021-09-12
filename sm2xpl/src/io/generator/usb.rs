@@ -1,144 +1,125 @@
-use std::{cell::RefCell, rc::Rc, time::Duration};
+use std::time::Duration;
 
 use crate::{
-    common::{chain::Supplier, timer::DeltaCounter},
-    io::delta::DeltaTimeSupplier,
+    common::timer::{DeltaCounter, Elapsed},
+    io::input_params::{InputParamType, InputParameter},
 };
 
-use super::{bounced::BouncedGenerator, generic::Generator};
+use super::{
+    bounced::BouncedGenerator, constant::ConstantGenerator, generic::Generator,
+    sequential::SequentialGenerator,
+};
 
-const GEN_TIMEOUT: Duration = Duration::from_millis(50);
+struct TypedGenerator {
+    ip_type: InputParamType,
+    generator: Box<dyn Generator>,
+}
 
 pub struct USBParamGenerator {
-    params: Vec<GeneratorType>,
-    delta: Rc<RefCell<DeltaTimeSupplier>>,
+    generators: Vec<TypedGenerator>,
     timer: DeltaCounter,
 }
 
 impl USBParamGenerator {
-    pub fn constant(delta: Rc<RefCell<DeltaTimeSupplier>>) -> Self {
+    pub fn new(delay: Duration) -> Self {
         Self {
-            params: vec![GeneratorType::ConstU16(0); 18],
-            delta,
-            timer: DeltaCounter::immediate(GEN_TIMEOUT),
+            generators: Default::default(),
+            timer: DeltaCounter::deferred(delay),
         }
     }
 
-    pub fn dynamic(delta: Rc<RefCell<DeltaTimeSupplier>>) -> Self {
-        let params = vec![
-            GeneratorType::ConstU16(0), // Latitude HI
-            GeneratorType::ConstU16(0), // Latitude LO
-            GeneratorType::ConstU16(0), // Longitude HI
-            GeneratorType::ConstU16(0), // Longitude LO
-            // GeneratorType::ConstU16(0),
-            GeneratorType::RangeU16(BouncedGenerator::new(1, 0, 8000, 10, GEN_TIMEOUT * 2)), // Altitude
-            GeneratorType::ConstU16(0),
-            // GeneratorType::RangeU16(Generator::new(35, 0, 32767, GEN_TIMEOUT)), // Heading
-            GeneratorType::ConstU16(0),
-            // GeneratorType::RangeI16(Generator::new(350, -32767, 32767, GEN_TIMEOUT)), // Pitch
-            GeneratorType::ConstU16(0),
-            // GeneratorType::RangeI16(Generator::new(300, -32767, 32767, GEN_TIMEOUT)), // Roll
-            GeneratorType::ConstU16(0),
-            // GeneratorType::RangeI16(Generator::new(2000, -32767, 32767, GEN_TIMEOUT)), // Ailerons
-            GeneratorType::ConstU16(0),
-            // GeneratorType::RangeI16(Generator::new(2000, -32767, 32767, GEN_TIMEOUT)), // Elevator
-            GeneratorType::ConstU16(0),
-            // GeneratorType::RangeI16(Generator::new(2000, -32767, 32767, GEN_TIMEOUT)), // Rudder
-            GeneratorType::ConstU16(0),
-            // GeneratorType::RangeU16(Generator::new(300, 0, 32767, GEN_TIMEOUT)), // Flaps
-            GeneratorType::ConstU16(0),
-            // GeneratorType::RangeU16(Generator::new(300, 0, 32767, GEN_TIMEOUT)), // Left engine
-            GeneratorType::ConstU16(0),
-            // GeneratorType::RangeU16(Generator::new(300, 0, 32767, GEN_TIMEOUT)), // Right engine
-            GeneratorType::ConstU16(0),
-            // GeneratorType::RangeU16(Generator::new(400, 0, 32767, GEN_TIMEOUT)), // Front gear
-            GeneratorType::ConstU16(0),
-            // GeneratorType::RangeU16(Generator::new(400, 0, 32767, GEN_TIMEOUT)), // Left gear
-            GeneratorType::ConstU16(0),
-            // GeneratorType::RangeU16(Generator::new(400, 0, 32767, GEN_TIMEOUT)), // Right gear
-            // Lights
-            GeneratorType::ConstU16(0),
-            // GeneratorType::Range({
-            //     let mut generator = Generator::full_range(1, GEN_TIMEOUT);
-            //     generator.max = 7;
-            //     generator.timer = TimeCounter::new(Duration::from_secs(3));
-            //     generator
-            // }),
-            // Init
-            GeneratorType::ConstU16(0),
-            // GeneratorType::Range({
-            //     let mut generator = Generator::full_range(1, GEN_TIMEOUT);
-            //     generator.max = 1;
-            //     generator.timer = TimeCounter::new(Duration::from_secs(10));
-            //     generator
-            // }),
-        ];
+    fn generate_params(&mut self, diff: Duration) -> Vec<InputParameter> {
+        let mut params = Vec::with_capacity(self.generators.len());
+        for t_gen in self.generators.iter_mut() {
+            let delta = self.timer.delay() + diff;
+            params.push(InputParameter {
+                ip_type: t_gen.ip_type,
+                value: t_gen.generator.generate(delta),
+            });
+        }
+        params
+    }
+}
 
-        Self {
+impl USBParamGenerator {
+    pub fn add(&mut self, ip_type: InputParamType, generator: Box<dyn Generator>) {
+        self.generators.push(TypedGenerator { ip_type, generator });
+    }
+
+    pub fn add_const(&mut self, ip_type: InputParamType, default: i16) {
+        let generator = ConstantGenerator::new(default);
+        self.add(ip_type, Box::new(generator));
+    }
+
+    pub fn add_sequential(
+        &mut self,
+        ip_type: InputParamType,
+        default: i16,
+        step: i16,
+        delay: Duration,
+    ) {
+        let generator = SequentialGenerator::new(default, step, delay);
+        self.add(ip_type, Box::new(generator));
+    }
+
+    pub fn add_bounced(
+        &mut self,
+        ip_type: InputParamType,
+        default: i16,
+        step: i16,
+        bounce_on: usize,
+        delay: Duration,
+    ) {
+        let sequential = SequentialGenerator::new(default, step, delay);
+        let bounced = BouncedGenerator::new(Box::new(sequential), bounce_on);
+        self.add(ip_type, Box::new(bounced));
+    }
+
+    fn generate(&mut self, delta: Duration) -> Option<Vec<InputParameter>> {
+        match self.timer.count(delta) {
+            Elapsed::Yes(diff) => {
+                self.timer.count(diff);
+                Some(self.generate_params(diff))
+            }
+            Elapsed::No => None,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::io::generator::{constant::ConstantGenerator, sequential::SequentialGenerator};
+
+    use super::*;
+
+    #[test]
+    fn should_generate_params() {
+        let const_default = 136;
+        let seq_default = 25;
+        let seq_step = 25;
+        let delay = Duration::from_secs(1);
+        let mut generator = USBParamGenerator::new(delay.clone());
+        let const_generator = ConstantGenerator::new(const_default);
+        let seq_generator = SequentialGenerator::new(seq_default, seq_step, delay.clone());
+
+        generator.add(InputParamType::Ailerons, Box::new(const_generator));
+        generator.add(InputParamType::Altitude, Box::new(seq_generator));
+
+        let params = generator.generate(Duration::ZERO);
+        assert!(params.is_none());
+        let params = generator.generate(delay).unwrap();
+        assert_eq!(
             params,
-            delta,
-            timer: DeltaCounter::immediate(GEN_TIMEOUT),
-        }
-    }
-
-    pub fn update_params(&mut self, params: &Vec<u16>) {
-        for (idx, param) in params.iter().enumerate() {
-            self.update_param(idx, *param);
-        }
-    }
-
-    fn update_param(&mut self, idx: usize, value: u16) {
-        let param = &mut self.params[idx];
-        match param {
-            GeneratorType::ConstU16(param) => *param = value,
-            GeneratorType::RangeU16(generator) => generator.reset(value),
-            GeneratorType::RangeI16(generator) => generator.reset(value as i16),
-        }
-    }
-
-    fn can_supply(&mut self, delta: &Duration) -> bool {
-        self.timer.count(delta).is_elapsed()
-    }
-
-    fn update(&mut self, delta: &Duration) {
-        for generator in self.params.iter_mut() {
-            generator.generate(delta);
-        }
-    }
-
-    fn generate(&mut self, delta: &Duration) -> Vec<u16> {
-        self.params
-            .iter_mut()
-            .map(|generator| generator.generate(delta).reverse_bits())
-            .collect()
-    }
-}
-
-impl Supplier<Option<Vec<u16>>> for USBParamGenerator {
-    fn supply(&mut self) -> Option<Vec<u16>> {
-        let delta = self.delta.borrow_mut().supply();
-        if self.can_supply(&delta) {
-            Some(self.generate(&delta))
-        } else {
-            self.update(&delta);
-            None
-        }
-    }
-}
-
-#[derive(Copy, Clone)]
-enum GeneratorType {
-    ConstU16(u16),
-    RangeU16(BouncedGenerator<u16>),
-    RangeI16(BouncedGenerator<i16>),
-}
-
-impl GeneratorType {
-    fn generate(&mut self, delta: &Duration) -> u16 {
-        match self {
-            GeneratorType::ConstU16(param) => *param,
-            GeneratorType::RangeU16(generator) => generator.generate(delta),
-            GeneratorType::RangeI16(generator) => generator.generate(delta) as u16,
-        }
+            vec![
+                InputParameter {
+                    ip_type: InputParamType::Ailerons,
+                    value: const_default
+                },
+                InputParameter {
+                    ip_type: InputParamType::Altitude,
+                    value: seq_default + seq_step
+                }
+            ]
+        );
     }
 }

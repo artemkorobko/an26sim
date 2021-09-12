@@ -1,4 +1,3 @@
-pub mod delta;
 pub mod generator;
 pub mod metrics;
-pub mod params;
+pub mod input_params;
