@@ -3,10 +3,7 @@ use std::time::Duration;
 use xplm::geometry::Rect;
 use xplm_sys::XPWidgetID;
 
-use crate::{
-    io::metrics::IOMetrics,
-    xplane::input_params::{General, View, XPlaneInputParams},
-};
+use crate::{io::metrics::IOMetrics, xplane::dataref::collection::DataRefs};
 
 use super::{
     api::ApiResult, engines::EnginesBlock, gears::GearsBlock, general::GeneralBlock, io::IOBlock,
@@ -52,22 +49,20 @@ impl Widgets {
 
     pub fn update(
         &self,
-        params: &XPlaneInputParams,
-        general: &General,
-        view: &View,
-        terrain: f32,
+        data_refs: &DataRefs,
         input: &mut IOMetrics,
         output: &mut IOMetrics,
         delta: &Duration,
     ) -> ApiResult<()> {
-        self.general.update(general)?;
+        self.general.update(&data_refs.general)?;
         self.io.update(input, output, delta)?;
-        self.surfaces.update(&params.surfaces)?;
-        self.lights.update(&params.lights)?;
-        self.view.update(&view)?;
-        self.location.update(&params.location, terrain)?;
-        self.orientation.update(&params.orientation)?;
-        self.engines.update(&params.engines)?;
-        self.gears.update(&params.gears)
+        self.surfaces.update(&data_refs.surfaces)?;
+        self.lights.update(&data_refs.lights)?;
+        self.view.update(&data_refs.view)?;
+        self.location
+            .update(&data_refs.location, &data_refs.terrain_probe)?;
+        self.orientation.update(&data_refs.orientation)?;
+        self.engines.update(&data_refs.engines)?;
+        self.gears.update(&data_refs.gears)
     }
 }

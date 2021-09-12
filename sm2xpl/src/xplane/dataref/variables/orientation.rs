@@ -1,8 +1,6 @@
 use xplm::data::borrowed::{DataRef, FindError};
 use xplm::data::{DataRead, DataReadWrite, ReadWrite};
 
-use crate::xplane::input_params::Orientation;
-
 pub struct OrientationDataRef {
     // True heading of the plane in degrees from the Z axis (degrees) [0.0..360.0]
     psi: DataRef<f32, ReadWrite>,
@@ -21,17 +19,27 @@ impl OrientationDataRef {
         })
     }
 
-    pub fn get(&self) -> Orientation {
-        Orientation {
-            heading: self.psi.get(),
-            pitch: self.theha.get(),
-            roll: self.phi.get(),
-        }
+    pub fn heading(&self) -> f32 {
+        self.psi.get()
     }
 
-    pub fn set(&mut self, orientation: &Orientation) {
-        self.psi.set(orientation.heading);
-        self.theha.set(orientation.pitch);
-        self.phi.set(orientation.roll);
+    pub fn set_heading(&mut self, value: f32) {
+        self.psi.set(value);
+    }
+
+    pub fn pitch(&self) -> f32 {
+        self.theha.get()
+    }
+
+    pub fn set_pitch(&mut self, value: f32) {
+        self.theha.set(value);
+    }
+
+    pub fn roll(&self) -> f32 {
+        self.phi.get()
+    }
+
+    pub fn set_roll(&mut self, value: f32) {
+        self.phi.set(value);
     }
 }

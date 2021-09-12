@@ -1,105 +1,75 @@
 use std::time::Duration;
 
-use num_traits::{NumCast, PrimInt};
+use num_traits::PrimInt;
 use rand::{distributions::uniform::SampleUniform, Rng};
 
-use super::{generic::Generator, sequential::SequentialGenerator};
+use super::generic::Generator;
 
-#[derive(Copy, Clone)]
 pub struct BouncedGenerator<T> {
-    gen: SequentialGenerator<T>,
+    generator: Box<dyn Generator<T>>,
+    bounce_on: usize,
     sequences: usize,
-    debounced_sequences: usize,
 }
 
-impl<T: PrimInt + SampleUniform> BouncedGenerator<T> {
-    pub fn new(step: T, min: T, max: T, debounced_sequences: usize, timeout: Duration) -> Self {
+impl<T> BouncedGenerator<T> {
+    pub fn new(generator: Box<dyn Generator<T>>, bounce_on: usize) -> Self {
         Self {
-            gen: SequentialGenerator::new(step, min, max, timeout),
+            generator,
+            bounce_on,
             sequences: 0,
-            debounced_sequences,
         }
     }
 
-    fn should_bounce(&mut self) -> bool {
+    fn count_sequence(&mut self) {
         self.sequences += 1;
-        self.sequences == self.debounced_sequences
     }
 
-    fn bounce(&self, param: T) -> T {
-        if self.gen.max() - self.gen.min() >= NumCast::from(3).unwrap() {
-            let mut result = param;
-            while result == param {
-                result = rand::thread_rng().gen_range(self.gen.min()..self.gen.max())
-            }
+    fn reset_sequeences(&mut self) {
+        self.sequences = 0;
+    }
 
-            result
-        } else {
-            param
-        }
+    fn should_bounce(&self) -> bool {
+        self.sequences == self.bounce_on
     }
 }
 
 impl<T: PrimInt + SampleUniform> Generator<T> for BouncedGenerator<T> {
-    fn generate(&mut self, delta: &Duration) -> T {
-        let param = self.gen.generate(delta);
+    fn generate(&mut self, delta: Duration) -> T {
+        let value = self.generator.generate(delta);
+        self.count_sequence();
         if self.should_bounce() {
-            self.sequences = 0;
-            self.bounce(param)
+            self.reset_sequeences();
+            rand::thread_rng().gen_range(T::min_value()..T::max_value())
         } else {
-            param
+            value
         }
-    }
-
-    fn reset(&mut self, param: T) {
-        self.gen.reset(param);
     }
 }
 
 #[cfg(test)]
 mod test {
+    use crate::io::generator::sequential::SequentialGenerator;
+
     use super::*;
 
     #[test]
     fn should_bounce_every_3_iteration() {
-        let min = 0;
-        let max = 100;
-        let duration = Duration::from_secs(1);
-        let mut gen = BouncedGenerator::new(1, min, max, 3, duration);
+        let default = 100;
+        let step = 1;
+        let delay = Duration::from_secs(1);
+        let sequential = SequentialGenerator::new(default, step, delay.clone());
 
-        assert_eq!(gen.generate(&duration), 1);
-        assert_eq!(gen.generate(&duration), 2);
-        let param = gen.generate(&duration);
-        assert!(param >= min && param <= max);
-        assert!(param < 3 || param > 3);
-        assert_eq!(gen.generate(&duration), 4);
-        assert_eq!(gen.generate(&duration), 5);
-        let param = gen.generate(&duration);
-        assert!(param >= min && param <= max);
-        assert!(param < 6 || param > 6);
-    }
+        let mut generator = BouncedGenerator::new(Box::new(sequential), 3);
 
-    #[test]
-    fn should_not_bounce_when_range_is_less_than_4() {
-        let duration = Duration::from_secs(1);
-        let mut gen = BouncedGenerator::new(1, 0, 2, 3, duration);
-
-        assert_eq!(gen.generate(&duration), 1);
-        assert_eq!(gen.generate(&duration), 2);
-        assert_eq!(gen.generate(&duration), 2);
-        assert_eq!(gen.generate(&duration), 1);
-        assert_eq!(gen.generate(&duration), 0);
-    }
-
-    #[test]
-    fn should_reset_parameter() {
-        let duration = Duration::from_secs(1);
-        let mut generator = SequentialGenerator::new(1, 0, 100, duration);
-
-        assert_eq!(generator.generate(&duration), 1);
-        assert_eq!(generator.generate(&duration), 2);
-        generator.reset(7);
-        assert_eq!(generator.generate(&duration), 8);
-        assert_eq!(generator.generate(&duration), 9);
+        let mut expected = default + step;
+        assert_eq!(generator.generate(delay.clone()), expected);
+        expected += step;
+        assert_eq!(generator.generate(delay.clone()), expected);
+        expected += step;
+        assert_ne!(generator.generate(delay.clone()), expected);
+        expected += step;
+        assert_eq!(generator.generate(delay.clone()), expected);
+        expected += step;
+        assert_eq!(generator.generate(delay.clone()), expected);
     }
 }

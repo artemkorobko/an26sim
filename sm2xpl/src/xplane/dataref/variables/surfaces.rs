@@ -1,8 +1,6 @@
 use xplm::data::borrowed::{DataRef, FindError};
 use xplm::data::{DataRead, DataReadWrite, ReadWrite};
 
-use crate::xplane::input_params::Surfaces;
-
 pub struct SurfacesDataRef {
     yoke_roll_ratio: DataRef<f32, ReadWrite>,
     yoke_pitch_ratio: DataRef<f32, ReadWrite>,
@@ -24,19 +22,35 @@ impl SurfacesDataRef {
         })
     }
 
-    pub fn get(&self) -> Surfaces {
-        Surfaces {
-            ailerons: self.yoke_roll_ratio.get(),
-            elevator: self.yoke_pitch_ratio.get(),
-            rudder: self.yoke_heading_ratio.get(),
-            flaps: self.flaprat.get(),
-        }
+    pub fn ailerons(&self) -> f32 {
+        self.yoke_roll_ratio.get()
     }
 
-    pub fn set(&mut self, surfaces: &Surfaces) {
-        self.yoke_roll_ratio.set(surfaces.ailerons);
-        self.yoke_pitch_ratio.set(surfaces.elevator);
-        self.yoke_heading_ratio.set(surfaces.rudder);
-        self.flaprat.set(surfaces.flaps);
+    pub fn set_ailerons(&mut self, value: f32) {
+        self.yoke_roll_ratio.set(value);
+    }
+
+    pub fn elevator(&self) -> f32 {
+        self.yoke_pitch_ratio.get()
+    }
+
+    pub fn set_elevator(&mut self, value: f32) {
+        self.yoke_pitch_ratio.set(value);
+    }
+
+    pub fn rudder(&self) -> f32 {
+        self.yoke_heading_ratio.get()
+    }
+
+    pub fn set_rudder(&mut self, value: f32) {
+        self.yoke_heading_ratio.set(value);
+    }
+
+    pub fn flaps(&self) -> f32 {
+        self.flaprat.get()
+    }
+
+    pub fn set_flaps(&mut self, value: f32) {
+        self.flaprat.set(value);
     }
 }

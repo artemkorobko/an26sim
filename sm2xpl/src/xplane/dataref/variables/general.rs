@@ -1,8 +1,6 @@
 use xplm::data::borrowed::{DataRef, FindError};
 use xplm::data::{ArrayRead, ArrayReadWrite, DataRead, DataReadWrite, ReadOnly, ReadWrite};
 
-use crate::xplane::input_params::General;
-
 const ENABLED: i32 = 0;
 const DISABLED: i32 = 1;
 
@@ -29,19 +27,8 @@ impl GeneralDataRef {
         })
     }
 
-    pub fn get(&self) -> General {
-        General {
-            fps: 1.0 / self.frame_rate_period.get(),
-            physics: self.is_physics_enabled(),
-        }
-    }
-
-    pub fn enable_physics(&mut self) {
-        self.set_physics_state(ENABLED);
-    }
-
-    pub fn disable_physics(&mut self) {
-        self.set_physics_state(DISABLED);
+    pub fn fps(&self) -> f32 {
+        1.0 / self.frame_rate_period.get()
     }
 
     pub fn is_physics_enabled(&self) -> bool {
@@ -50,6 +37,14 @@ impl GeneralDataRef {
             .get(0)
             .map(|value| *value == ENABLED && self.override_joystick.get() == ENABLED)
             .unwrap_or(false)
+    }
+
+    pub fn enable_physics(&mut self) {
+        self.set_physics_state(ENABLED);
+    }
+
+    pub fn disable_physics(&mut self) {
+        self.set_physics_state(DISABLED);
     }
 
     pub fn is_physics_disabled(&self) -> bool {

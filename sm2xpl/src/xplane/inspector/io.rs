@@ -4,8 +4,8 @@ use xplm::geometry::Rect;
 use xplm_sys::XPWidgetID;
 
 use crate::{
+    create_label,
     io::metrics::{IOMetrics, IOState},
-    label,
     xplane::inspector::rect_ext::RectExt,
 };
 
@@ -26,25 +26,25 @@ pub struct IOBlock {
 
 impl IOBlock {
     pub fn new(parent: XPWidgetID, rect: &Rect<i32>) -> ApiResult<(Self, Rect<i32>)> {
-        let in_state = label!("\u{21e2} State:", parent, &rect);
+        let in_state = create_label!("\u{21e2} State:", parent, &rect);
         let rect = rect.to_next_line();
-        let in_transferred = label!("\u{21e2} Received:", parent, &rect);
+        let in_transferred = create_label!("\u{21e2} Received:", parent, &rect);
         let rect = rect.to_next_line();
-        let in_packets = label!("\u{21e2} Packets:", parent, &rect);
+        let in_packets = create_label!("\u{21e2} Packets:", parent, &rect);
         let rect = rect.to_next_line();
-        let in_speed = label!("\u{21e2} Speed:", parent, &rect);
+        let in_speed = create_label!("\u{21e2} Speed:", parent, &rect);
         let rect = rect.to_next_line();
-        let in_errors = label!("\u{21e2} Errors:", parent, &rect);
+        let in_errors = create_label!("\u{21e2} Errors:", parent, &rect);
         let rect = rect.to_next_block();
-        let out_state = label!("\u{21e0} State:", parent, &rect);
+        let out_state = create_label!("\u{21e0} State:", parent, &rect);
         let rect = rect.to_next_line();
-        let out_transferred = label!("\u{21e0} Sent:", parent, &rect);
+        let out_transferred = create_label!("\u{21e0} Sent:", parent, &rect);
         let rect = rect.to_next_line();
-        let out_packets = label!("\u{21e0} Packets:", parent, &rect);
+        let out_packets = create_label!("\u{21e0} Packets:", parent, &rect);
         let rect = rect.to_next_line();
-        let out_speed = label!("\u{21e0} Speed:", parent, &rect);
+        let out_speed = create_label!("\u{21e0} Speed:", parent, &rect);
         let rect = rect.to_next_line();
-        let out_errors = label!("\u{21e0} Errors:", parent, &rect);
+        let out_errors = create_label!("\u{21e0} Errors:", parent, &rect);
         Ok((
             Self {
                 in_state,
@@ -77,7 +77,8 @@ impl IOBlock {
         update_widget(self.out_transferred, &format_size(output.transferred))?;
         update_widget(self.out_packets, &format!("{}", output.packets))?;
         update_widget(self.out_speed, &format_speed(output.bps(delta)))?;
-        update_widget(self.out_errors, &format!("{}", output.errors))
+        update_widget(self.out_errors, &format!("{}", output.errors))?;
+        Ok(())
     }
 }
 
