@@ -2,44 +2,56 @@ use std::time::Duration;
 
 use crate::common::timer::{DeltaCounter, Elapsed};
 
-use super::generic::Generator;
+use super::{generator::Generator, parameter::Parameter};
 
 enum Operation {
     Increase,
     Decrease,
 }
 
-enum GeneratorResult {
-    Ok(i16),
-    Overflow,
-}
-
-pub struct SequentialGenerator {
-    value: i16,
-    step: i16,
+pub struct SequentialGenerator<T: Parameter> {
+    value: T,
+    step: T,
     time: DeltaCounter,
     operation: Operation,
 }
 
-impl SequentialGenerator {
-    pub fn new(default: i16, step: i16, delay: Duration) -> Self {
+impl<T: Parameter> From<T> for SequentialGenerator<T> {
+    fn from(value: T) -> Self {
         Self {
-            value: default,
-            step,
-            time: DeltaCounter::deferred(delay),
+            value,
+            step: T::zero(),
+            time: DeltaCounter::default(),
             operation: Operation::Increase,
         }
     }
+}
 
-    fn generate_value(&self) -> GeneratorResult {
-        let (value, overflow) = match self.operation {
-            Operation::Increase => self.value.overflowing_add(self.step),
-            Operation::Decrease => self.value.overflowing_sub(self.step),
-        };
+impl<T: Parameter + Copy> SequentialGenerator<T> {
+    pub fn with_step(mut self, step: T) -> Self {
+        self.step = step;
+        self
+    }
 
-        match overflow {
-            true => GeneratorResult::Overflow,
-            false => GeneratorResult::Ok(value),
+    pub fn deferred(mut self, delay: Duration) -> Self {
+        self.time = DeltaCounter::deferred(delay);
+        self
+    }
+
+    pub fn increase(mut self) -> Self {
+        self.operation = Operation::Increase;
+        self
+    }
+
+    pub fn decrease(mut self) -> Self {
+        self.operation = Operation::Decrease;
+        self
+    }
+
+    fn generate_param(&self) -> Option<T> {
+        match self.operation {
+            Operation::Increase => self.value.increase(self.step),
+            Operation::Decrease => self.value.decrease(self.step),
         }
     }
 
@@ -51,24 +63,28 @@ impl SequentialGenerator {
     }
 }
 
-impl Generator for SequentialGenerator {
-    fn generate(&mut self, delta: Duration) -> i16 {
+impl<T: Parameter + Copy> Generator for SequentialGenerator<T> {
+    fn generate(&mut self, delta: Duration) -> Vec<u8> {
         match self.time.count(delta.clone()) {
             Elapsed::Yes(diff) => {
                 self.time.count(diff);
-                match self.generate_value() {
-                    GeneratorResult::Ok(value) => {
+                match self.generate_param() {
+                    Some(value) => {
                         self.value = value;
-                        self.value
+                        self.value.to_be_bytes_vec()
                     }
-                    GeneratorResult::Overflow => {
+                    None => {
                         self.operation = self.reverse_operation();
                         self.generate(delta)
                     }
                 }
             }
-            Elapsed::No => self.value,
+            Elapsed::No => self.value.to_be_bytes_vec(),
         }
+    }
+
+    fn size_bytes(&self) -> usize {
+        self.value.size_bytes()
     }
 }
 
@@ -77,49 +93,77 @@ mod tests {
     use super::*;
 
     #[test]
-    fn should_generate_value() {
-        let default = 50;
+    fn generate_immediate_value() {
+        let default = 100i16;
+        let step = 1;
+        let mut generator = SequentialGenerator::from(default).with_step(step);
+
+        let value = generator.generate(Duration::ZERO);
+        assert_eq!(value, (default + step).to_be_bytes());
+
+        let value = generator.generate(Duration::ZERO);
+        assert_eq!(value, (default + step + step).to_be_bytes());
+    }
+
+    #[test]
+    fn generate_dereffed_value() {
+        let default = 50i16;
         let step = 10;
         let delay = Duration::from_secs(1);
-        let mut generator = SequentialGenerator::new(default, step, delay);
+        let mut generator = SequentialGenerator::from(default)
+            .with_step(step)
+            .deferred(delay);
 
         let value = generator.generate(Duration::ZERO);
-        assert_eq!(value, default);
+        assert_eq!(value, default.to_be_bytes());
 
         let value = generator.generate(delay);
-        assert_eq!(value, default + step);
+        assert_eq!(value, (default + step).to_be_bytes());
     }
 
     #[test]
-    fn should_reverse_direction_on_max_overflow() {
+    fn reverse_direction_on_max_overflow() {
         let step = 5;
         let delay = Duration::from_secs(1);
-        let mut generator = SequentialGenerator::new(i16::MAX - step, step, delay);
+        let mut generator = SequentialGenerator::from(i16::MAX - step)
+            .with_step(step)
+            .deferred(delay);
 
         let value = generator.generate(Duration::ZERO);
-        assert_eq!(value, i16::MAX - step);
+        assert_eq!(value, (i16::MAX - step).to_be_bytes());
 
         let value = generator.generate(delay.clone());
-        assert_eq!(value, i16::MAX);
+        assert_eq!(value, i16::MAX.to_be_bytes());
 
         let value = generator.generate(delay);
-        assert_eq!(value, i16::MAX - step);
+        assert_eq!(value, (i16::MAX - step).to_be_bytes());
     }
 
     #[test]
-    fn should_reverse_direction_on_min_overflow() {
+    fn reverse_direction_on_min_overflow() {
         let step = 8;
         let delay = Duration::from_secs(1);
-        let mut generator = SequentialGenerator::new(i16::MIN + step, step, delay);
-        generator.operation = Operation::Decrease;
+        let mut generator = SequentialGenerator::from(i16::MIN + step)
+            .with_step(step)
+            .deferred(delay)
+            .decrease();
 
         let value = generator.generate(Duration::ZERO);
-        assert_eq!(value, i16::MIN + step);
+        assert_eq!(value, (i16::MIN + step).to_be_bytes());
 
         let value = generator.generate(delay.clone());
-        assert_eq!(value, i16::MIN);
+        assert_eq!(value, i16::MIN.to_be_bytes());
 
         let value = generator.generate(delay);
-        assert_eq!(value, i16::MIN + step);
+        assert_eq!(value, (i16::MIN + step).to_be_bytes());
+    }
+
+    #[test]
+    fn return_size_bytes() {
+        let generator = SequentialGenerator::from(0u16);
+
+        let size = generator.size_bytes();
+
+        assert_eq!(size, 2);
     }
 }

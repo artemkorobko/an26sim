@@ -83,7 +83,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn should_invoke_all_chain_stages() {
+    fn invoke_all_chain_steps() {
         const EXPECTED_RESULT: i32 = 20;
         let mut chain = Chain::supply(|| 10)
             .map(|value| value + 10)

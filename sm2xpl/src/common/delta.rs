@@ -24,11 +24,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn should_supply_delta_time() {
+    fn supply_updated_delta_time() {
+        let duration = Duration::from_secs(1);
         let mut supplier = DeltaTimeSupplier::default();
         assert_eq!(supplier.supply(), Duration::ZERO);
 
-        let duration = Duration::from_secs(1);
         supplier.update(duration);
 
         assert_eq!(supplier.supply(), duration);
