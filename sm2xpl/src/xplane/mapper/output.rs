@@ -11,8 +11,12 @@ impl XPlaneSM2MOutputMapper {
         value as u16
     }
 
-    pub fn latitude(latitude: f64) -> u32 {
-        latitude.scale(0.0, 90.0, 0.0, u32::MAX as f64) as u32
+    pub fn latitude(value: f64) -> u32 {
+        value.scale(0.0, 90.0, 0.0, u32::MAX as f64) as u32
+    }
+
+    pub fn longitude(value: f64) -> u32 {
+        value.scale(0.0, 360.0, 0.0, u32::MAX as f64) as u32
     }
 }
 

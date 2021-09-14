@@ -5,21 +5,16 @@ use crate::{
     xplane::{input_params::XPlaneInputParams, mapper::bit::bit_test},
 };
 
-pub struct SM2MXPlaneInputMapper {
-    default: XPlaneInputParams,
-}
+#[derive(Default)]
+pub struct SM2MXPlaneInputMapper;
 
 impl SM2MXPlaneInputMapper {
-    pub fn new(default: XPlaneInputParams) -> Self {
-        Self { default }
-    }
-
     fn map_params(&self, input: Vec<u8>) -> XPlaneInputParams {
-        let mut params = self.default;
+        let mut params = XPlaneInputParams::default();
         let mut buffer = Bytes::from(input);
 
         if let Some(value) = buffer.try_get_u32() {
-            params.latitude = (value as f64).scale(0.0, u32::MAX as f64, 0.0, 90.0);
+            params.latitude = Self::latitude(value);
         }
 
         if let Some(value) = buffer.try_get_u32() {
@@ -90,6 +85,10 @@ impl SM2MXPlaneInputMapper {
 
         params
     }
+
+    fn latitude(value: u32) -> f64 {
+        (value as f64).scale(0.0, u32::MAX as f64, 0.0, 90.0)
+    }
 }
 
 impl Mapper<Option<Vec<u8>>, Option<XPlaneInputParams>> for SM2MXPlaneInputMapper {
@@ -106,12 +105,11 @@ mod tests {
 
     #[test]
     fn should_map_default_params() {
-        let default = Default::default();
-        let mut mapper = SM2MXPlaneInputMapper::new(default);
+        let mut mapper = SM2MXPlaneInputMapper::default();
 
         let params = mapper.map(Some(Vec::new())).unwrap();
 
-        assert_eq!(params, default);
+        assert_eq!(params, Default::default());
     }
 
     #[test]
@@ -125,7 +123,6 @@ mod tests {
 
     #[test]
     fn should_map_latitude() {
-        // println!("{}", 50.351791f64.scale(0.0, 90.0, 0.0, (u32::MAX as f64)) as u32);
         let input = input_with_u32_param(2402881062, 0);
         let mut mapper = default_mapper();
 
@@ -136,7 +133,6 @@ mod tests {
 
     #[test]
     fn should_map_longitude() {
-        // println!("{}", 30.881541f64.scale(0.0, 360.0, 0.0, (u32::MAX as f64)) as u32);
         let input = input_with_u32_param(368431135, 4);
         let mut mapper = default_mapper();
 
@@ -436,7 +432,7 @@ mod tests {
     }
 
     fn default_mapper() -> SM2MXPlaneInputMapper {
-        SM2MXPlaneInputMapper::new(Default::default())
+        SM2MXPlaneInputMapper::default()
     }
 
     fn input_with_i16_param(value: i16, pos: usize) -> Vec<u8> {

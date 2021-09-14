@@ -8,13 +8,16 @@ use crate::{
         delta::DeltaTimeSupplier,
         percent::Percent,
     },
-    io::{generator::usb::USBParamGenerator, metrics::IOMetrics},
+    io::{
+        generator::{helper::ToGenerator, usb::USBParamGenerator},
+        metrics::IOMetrics,
+    },
     plugin_event::PluginEvent,
     xplane::{
         dataref::collection::DataRefs,
         input_params::XPlaneInputParams,
         inspector::window::InspectorWindow,
-        mapper::{input::SM2MXPlaneInputMapper, output::XPlaneSM2MOutputMapper},
+        mapper::{input::SM2MXPlaneInputMapper, output::XPlaneSM2MOutputMapper as OutMap},
         menu::{instance::PluginMenu, item::MenuItem},
     },
 };
@@ -114,13 +117,14 @@ impl Controller {
     fn build_generator_input_chain(&self) /*-> InputChain*/
     {
         let datarefs = self.datarefs.borrow();
-        let default_params = XPlaneInputParams::from(datarefs);
-        let generator =
-            USBParamGenerator::new(self.delta_supplier.clone(), Duration::from_millis(20))
-                .with_const_u32(XPlaneSM2MOutputMapper::latitude(default_params.latitude));
+        let params = XPlaneInputParams::from(datarefs);
+        let generator = USBParamGenerator::from(self.delta_supplier.clone())
+            .with_const(OutMap::latitude(params.latitude).to_const_generator())
+            .with_const(OutMap::longitude(params.longitude).to_const_generator())
+            .delay(Duration::from_millis(20));
 
-        Chain::supply(generator).map(SM2MXPlaneInputMapper::new(default_params));
-        //     .map(XPlaneParamDebouncer::new())
+        Chain::supply(generator).map(SM2MXPlaneInputMapper::default());
+        // .map(XPlaneParamDebouncer::new());
         //     .map(XPlaneParamInterpolator::new(
         //         input_params,
         //         self.delta_supplier.clone(),

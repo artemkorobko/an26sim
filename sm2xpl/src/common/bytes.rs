@@ -33,3 +33,62 @@ impl BytesExt for Bytes {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn return_u32() {
+        let mut bytes = Bytes::from(vec![1u8, 2u8, 3u8, 4u8]);
+
+        let value = bytes.try_get_u32().unwrap();
+
+        assert_eq!(value, 16909060);
+    }
+
+    #[test]
+    fn dont_return_u32() {
+        let mut bytes = Bytes::from(vec![]);
+
+        let value = bytes.try_get_u32();
+
+        assert!(value.is_none());
+    }
+
+    #[test]
+    fn return_u16() {
+        let mut bytes = Bytes::from(vec![1u8, 2u8]);
+
+        let value = bytes.try_get_u16().unwrap();
+
+        assert_eq!(value, 258);
+    }
+
+    #[test]
+    fn dont_return_u16() {
+        let mut bytes = Bytes::from(vec![]);
+
+        let value = bytes.try_get_u16();
+
+        assert!(value.is_none());
+    }
+
+    #[test]
+    fn return_i16() {
+        let mut bytes = Bytes::from(vec![255u8, 5u8]);
+
+        let value = bytes.try_get_i16().unwrap();
+
+        assert_eq!(value, -251);
+    }
+
+    #[test]
+    fn dont_return_i16() {
+        let mut bytes = Bytes::from(vec![]);
+
+        let value = bytes.try_get_i16();
+
+        assert!(value.is_none());
+    }
+}

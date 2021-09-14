@@ -1,30 +1,34 @@
-use std::time::Duration;
+use std::{marker::PhantomData, time::Duration};
 
-use num_traits::PrimInt;
-use rand::{distributions::uniform::SampleUniform, Rng};
+use super::{generator::Generator, parameter::Parameter};
 
-use super::generic::Generator;
-
-pub struct BouncedGenerator<T> {
-    generator: Box<dyn Generator<T>>,
+pub struct BouncedGenerator<T: Parameter> {
+    generator: Box<dyn Generator>,
     bounce_on: usize,
     sequences: usize,
+    phantom: PhantomData<T>,
 }
 
-impl<T> BouncedGenerator<T> {
-    pub fn new(generator: Box<dyn Generator<T>>, bounce_on: usize) -> Self {
+impl<T: Parameter> BouncedGenerator<T> {
+    pub fn bounce(generator: Box<dyn Generator>) -> Self {
         Self {
             generator,
-            bounce_on,
+            bounce_on: 0,
             sequences: 0,
+            phantom: PhantomData,
         }
+    }
+
+    pub fn every(mut self, sequence: usize) -> Self {
+        self.bounce_on = sequence;
+        self
     }
 
     fn count_sequence(&mut self) {
         self.sequences += 1;
     }
 
-    fn reset_sequeences(&mut self) {
+    fn reset_sequences(&mut self) {
         self.sequences = 0;
     }
 
@@ -33,16 +37,20 @@ impl<T> BouncedGenerator<T> {
     }
 }
 
-impl<T: PrimInt + SampleUniform> Generator<T> for BouncedGenerator<T> {
-    fn generate(&mut self, delta: Duration) -> T {
+impl<T: Parameter> Generator for BouncedGenerator<T> {
+    fn generate(&mut self, delta: Duration) -> Vec<u8> {
         let value = self.generator.generate(delta);
         self.count_sequence();
         if self.should_bounce() {
-            self.reset_sequeences();
-            rand::thread_rng().gen_range(T::min_value()..T::max_value())
+            self.reset_sequences();
+            T::random().to_be_bytes_vec()
         } else {
             value
         }
+    }
+
+    fn size_bytes(&self) -> usize {
+        self.generator.size_bytes()
     }
 }
 
@@ -53,23 +61,45 @@ mod test {
     use super::*;
 
     #[test]
-    fn should_bounce_every_3_iteration() {
-        let default = 100;
+    fn bounce_every_3_iteration() {
+        let default = 100u32;
         let step = 1;
         let delay = Duration::from_secs(1);
-        let sequential = SequentialGenerator::new(default, step, delay.clone());
-
-        let mut generator = BouncedGenerator::new(Box::new(sequential), 3);
+        let sequential = SequentialGenerator::from(default).with_step(step);
+        let mut generator = BouncedGenerator::<u32>::bounce(Box::new(sequential)).every(3);
 
         let mut expected = default + step;
-        assert_eq!(generator.generate(delay.clone()), expected);
+        let bytes = generator.generate(delay.clone());
+        assert_eq!(bytes, expected.to_be_bytes());
+
         expected += step;
-        assert_eq!(generator.generate(delay.clone()), expected);
+        let bytes = generator.generate(delay.clone());
+        assert_eq!(bytes, expected.to_be_bytes());
+
         expected += step;
-        assert_ne!(generator.generate(delay.clone()), expected);
+        let bytes = generator.generate(delay.clone());
+        assert_ne!(bytes, expected.to_be_bytes());
+
         expected += step;
-        assert_eq!(generator.generate(delay.clone()), expected);
+        let bytes = generator.generate(delay.clone());
+        assert_eq!(bytes, expected.to_be_bytes());
+
         expected += step;
-        assert_eq!(generator.generate(delay.clone()), expected);
+        let bytes = generator.generate(delay.clone());
+        assert_eq!(bytes, expected.to_be_bytes());
+
+        expected += step;
+        let bytes = generator.generate(delay.clone());
+        assert_ne!(bytes, expected.to_be_bytes());
+    }
+
+    #[test]
+    fn return_size_bytes() {
+        let sequential = SequentialGenerator::from(0u32).with_step(0u32);
+        let generator = BouncedGenerator::<u32>::bounce(Box::new(sequential));
+
+        let size = generator.size_bytes();
+
+        assert_eq!(size, 4);
     }
 }

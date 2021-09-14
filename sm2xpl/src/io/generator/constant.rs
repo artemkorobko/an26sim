@@ -1,20 +1,24 @@
 use std::time::Duration;
 
-use super::generic::Generator;
+use super::{generator::Generator, parameter::Parameter};
 
-pub struct ConstantGenerator<T> {
+pub struct ConstGenerator<T: Parameter> {
     value: T,
 }
 
-impl<T> ConstantGenerator<T> {
-    pub fn new(default: T) -> Self {
-        Self { value: default }
+impl<T: Parameter> From<T> for ConstGenerator<T> {
+    fn from(value: T) -> Self {
+        Self { value }
     }
 }
 
-impl<T: Copy> Generator<T> for ConstantGenerator<T> {
-    fn generate(&mut self, _: Duration) -> T {
-        self.value
+impl<T: Parameter> Generator for ConstGenerator<T> {
+    fn generate(&mut self, _: Duration) -> Vec<u8> {
+        self.value.to_be_bytes_vec()
+    }
+
+    fn size_bytes(&self) -> usize {
+        self.value.size_bytes()
     }
 }
 
@@ -23,12 +27,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn should_generate_constant() {
-        let default = 100;
+    fn generate_same_value() {
+        let default = 100i16;
+        let mut generator = ConstGenerator::from(default);
 
-        let mut generator = ConstantGenerator::new(default);
+        let bytes = generator.generate(Duration::ZERO);
+        assert_eq!(bytes, default.to_be_bytes());
 
-        assert_eq!(generator.generate(Duration::ZERO), default);
-        assert_eq!(generator.generate(Duration::ZERO), default);
+        let bytes = generator.generate(Duration::from_secs(1));
+        assert_eq!(bytes, default.to_be_bytes());
     }
 }

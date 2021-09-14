@@ -7,140 +7,56 @@ use crate::common::{
 };
 
 use super::{
-    bounced::BouncedGenerator, constant::ConstantGenerator, generic::Generator,
-    sequential::SequentialGenerator,
+    bounced::BouncedGenerator, constant::ConstGenerator, generator::Generator,
+    parameter::Parameter, sequential::SequentialGenerator,
 };
 
-enum GeneratorImpl {
-    GeneratorU16(Box<dyn Generator<u16>>),
-    GeneratorI16(Box<dyn Generator<i16>>),
-    GeneratorU32(Box<dyn Generator<u32>>),
-}
-
 pub struct USBParamGenerator {
-    generators: Vec<GeneratorImpl>,
+    generators: Vec<Box<dyn Generator>>,
     delta: Rc<RefCell<DeltaTimeSupplier>>,
     timer: DeltaCounter,
 }
 
-impl USBParamGenerator {
-    pub fn new(delta: Rc<RefCell<DeltaTimeSupplier>>, delay: Duration) -> Self {
+impl From<Rc<RefCell<DeltaTimeSupplier>>> for USBParamGenerator {
+    fn from(delta: Rc<RefCell<DeltaTimeSupplier>>) -> Self {
         Self {
             generators: Default::default(),
             delta,
-            timer: DeltaCounter::deferred(delay),
+            timer: DeltaCounter::default(),
         }
-    }
-
-    fn generate_params(&mut self, diff: Duration) -> Vec<u8> {
-        let mut params = Vec::with_capacity(self.generators.len() * 2);
-        for generator_impl in self.generators.iter_mut() {
-            let delta = self.timer.delay() + diff;
-            match generator_impl {
-                GeneratorImpl::GeneratorU16(generator) => {
-                    let value = generator.generate(delta);
-                    params.extend(value.to_be_bytes());
-                }
-                GeneratorImpl::GeneratorI16(generator) => {
-                    let value = generator.generate(delta);
-                    params.extend(value.to_be_bytes());
-                }
-                GeneratorImpl::GeneratorU32(generator) => {
-                    let value = generator.generate(delta);
-                    params.extend(value.to_be_bytes());
-                }
-            }
-        }
-        params
     }
 }
 
 impl USBParamGenerator {
-    pub fn with_const_u16(mut self, default: u16) -> Self {
-        let generator = ConstantGenerator::new(default);
-        self.generators
-            .push(GeneratorImpl::GeneratorU16(Box::new(generator)));
+    pub fn delay(mut self, delay: Duration) -> Self {
+        self.timer = DeltaCounter::deferred(delay);
         self
     }
 
-    pub fn with_const_i16(mut self, default: i16) -> Self {
-        let generator = ConstantGenerator::new(default);
-        self.generators
-            .push(GeneratorImpl::GeneratorI16(Box::new(generator)));
+    pub fn with_boxed_generator(mut self, generator: Box<dyn Generator>) -> Self {
+        self.generators.push(generator);
         self
     }
 
-    pub fn with_const_u32(mut self, default: u32) -> Self {
-        let generator = ConstantGenerator::new(default);
-        self.generators
-            .push(GeneratorImpl::GeneratorU32(Box::new(generator)));
-        self
+    pub fn with_const<T: 'static + Parameter>(mut self, generator: ConstGenerator<T>) -> Self {
+        self.with_boxed_generator(Box::new(generator))
     }
 
-    pub fn with_sequential_u16(mut self, default: u16, step: u16, delay: Duration) -> Self {
-        let generator = SequentialGenerator::new(default, step, delay);
-        self.generators
-            .push(GeneratorImpl::GeneratorU16(Box::new(generator)));
-        self
-    }
-
-    pub fn with_sequential_i16(mut self, default: i16, step: i16, delay: Duration) -> Self {
-        let generator = SequentialGenerator::new(default, step, delay);
-        self.generators
-            .push(GeneratorImpl::GeneratorI16(Box::new(generator)));
-        self
-    }
-
-    pub fn with_sequential_u32(mut self, default: u32, step: u32, delay: Duration) -> Self {
-        let generator = SequentialGenerator::new(default, step, delay);
-        self.generators
-            .push(GeneratorImpl::GeneratorU32(Box::new(generator)));
-        self
-    }
-
-    pub fn with_bounced_u16(
+    pub fn with_sequential<T: 'static + Parameter + Copy>(
         mut self,
-        default: u16,
-        step: u16,
-        bounce_on: usize,
-        delay: Duration,
+        generator: SequentialGenerator<T>,
     ) -> Self {
-        let sequential = SequentialGenerator::new(default, step, delay);
-        let bounced = BouncedGenerator::new(Box::new(sequential), bounce_on);
-        self.generators
-            .push(GeneratorImpl::GeneratorU16(Box::new(bounced)));
-        self
+        self.with_boxed_generator(Box::new(generator))
     }
 
-    pub fn with_bounced_i16(
+    pub fn with_bounced<T: 'static + Parameter + Copy>(
         mut self,
-        default: i16,
-        step: i16,
-        bounce_on: usize,
-        delay: Duration,
+        generator: BouncedGenerator<T>,
     ) -> Self {
-        let sequential = SequentialGenerator::new(default, step, delay);
-        let bounced = BouncedGenerator::new(Box::new(sequential), bounce_on);
-        self.generators
-            .push(GeneratorImpl::GeneratorI16(Box::new(bounced)));
-        self
+        self.with_boxed_generator(Box::new(generator))
     }
 
-    pub fn with_bounced_u32(
-        mut self,
-        default: u32,
-        step: u32,
-        bounce_on: usize,
-        delay: Duration,
-    ) -> Self {
-        let sequential = SequentialGenerator::new(default, step, delay);
-        let bounced = BouncedGenerator::new(Box::new(sequential), bounce_on);
-        self.generators
-            .push(GeneratorImpl::GeneratorU32(Box::new(bounced)));
-        self
-    }
-
-    fn generate(&mut self, delta: Duration) -> Option<Vec<u8>> {
+    fn try_generate(&mut self, delta: Duration) -> Option<Vec<u8>> {
         match self.timer.count(delta) {
             Elapsed::Yes(diff) => {
                 self.timer.count(diff);
@@ -149,39 +65,63 @@ impl USBParamGenerator {
             Elapsed::No => None,
         }
     }
+
+    fn generate_params(&mut self, diff: Duration) -> Vec<u8> {
+        let size_bytes = self.generators_size_bytes();
+        let mut params = Vec::with_capacity(size_bytes);
+        for generator in self.generators.iter_mut() {
+            let delta = self.timer.delay() + diff;
+            let bytes = generator.generate(delta);
+            params.extend(bytes);
+        }
+        params
+    }
+
+    fn generators_size_bytes(&self) -> usize {
+        self.generators
+            .iter()
+            .map(|generator| generator.size_bytes())
+            .fold(0, |acc, val| acc + val)
+    }
 }
 
 impl Supplier<Option<Vec<u8>>> for USBParamGenerator {
     fn supply(&mut self) -> Option<Vec<u8>> {
         let delta = self.delta.borrow_mut().supply();
-        self.generate(delta)
+        println!("delta: {:?}", delta);
+        self.try_generate(delta)
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::io::generator::helper::{ToBounced, ToGenerator};
+
     use super::*;
 
     #[test]
     fn should_generate_params() {
         let delay = Duration::from_secs(1);
-        let mut generator = USBParamGenerator::new(delay.clone())
-            .with_const_u16(123)
-            .with_const_i16(456)
-            .with_const_u32(789)
-            .with_sequential_u16(5, 5, delay)
-            .with_sequential_i16(10, 10, delay)
-            .with_sequential_u32(25, 25, delay)
-            .with_bounced_u16(5, 5, 10, delay)
-            .with_bounced_i16(10, 10, 10, delay)
-            .with_bounced_u32(25, 25, 10, delay);
+        let delta = Rc::new(RefCell::new(DeltaTimeSupplier::default()));
+        let mut generator = USBParamGenerator::from(delta.clone())
+            .with_const(123u16.to_const_generator())
+            .with_const(456i16.to_const_generator())
+            .with_const(789u32.to_const_generator())
+            .with_sequential(5u16.to_sequential_generator().with_step(5))
+            .with_sequential(10i16.to_sequential_generator().with_step(10))
+            .with_sequential(25u32.to_sequential_generator().with_step(25))
+            .with_bounced(5u16.to_const_generator().to_bounced_generator())
+            .with_bounced(10i16.to_const_generator().to_bounced_generator())
+            .with_bounced(25u32.to_const_generator().to_bounced_generator())
+            .delay(delay);
 
-        let params = generator.generate(Duration::ZERO);
+        let params = generator.supply();
         assert!(params.is_none());
-        let params = generator.generate(delay).unwrap();
+        delta.borrow_mut().update(delay);
+        let params = generator.supply().unwrap();
         assert_eq!(
             params,
-            vec![0, 123, 1, 200, 0, 0, 3, 21, 0, 10, 0, 20, 0, 0, 0, 50, 0, 10, 0, 20, 0, 0, 0, 50]
+            vec![0, 123, 1, 200, 0, 0, 3, 21, 0, 10, 0, 20, 0, 0, 0, 50, 0, 5, 0, 10, 0, 0, 0, 25]
         );
     }
 }
