@@ -1,8 +1,6 @@
 use xplm::data::borrowed::{DataRef, FindError};
 use xplm::data::{DataRead, ReadWrite};
 
-use crate::xplane::input_params::View;
-
 pub struct ViewDataRef {
     acf_pex: DataRef<f32, ReadWrite>,
     acf_pey: DataRef<f32, ReadWrite>,
@@ -21,11 +19,15 @@ impl ViewDataRef {
         })
     }
 
-    pub fn get(&self) -> View {
-        View {
-            x: self.acf_pex.get(),
-            y: self.acf_pey.get(),
-            z: self.acf_pez.get(),
-        }
+    pub fn x(&self) -> f32 {
+        self.acf_pex.get()
+    }
+
+    pub fn y(&self) -> f32 {
+        self.acf_pey.get()
+    }
+
+    pub fn z(&self) -> f32 {
+        self.acf_pez.get()
     }
 }

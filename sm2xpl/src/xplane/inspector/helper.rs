@@ -1,7 +1,7 @@
 use crate::common::percent::Percent;
 
 #[macro_export]
-macro_rules! label {
+macro_rules! create_label {
     ($text:literal, $parent:expr, $rect:expr) => {{
         let label_name = super::api::create_label($parent, $rect, $text)?;
         super::api::make_widget_lit(label_name);
