@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{io, time::Duration};
 
 use super::{generator::Generator, parameter::Parameter};
 
@@ -13,8 +13,8 @@ impl<T: Parameter> From<T> for ConstGenerator<T> {
 }
 
 impl<T: Parameter> Generator for ConstGenerator<T> {
-    fn generate(&mut self, _: Duration) -> Vec<u8> {
-        self.value.to_be_bytes_vec()
+    fn write(&mut self, _: Duration, buf: &mut dyn io::Write) -> io::Result<usize> {
+        self.value.write(buf)
     }
 
     fn size_bytes(&self) -> usize {
@@ -24,6 +24,8 @@ impl<T: Parameter> Generator for ConstGenerator<T> {
 
 #[cfg(test)]
 mod tests {
+    use bytes::BufMut;
+
     use super::*;
 
     #[test]
@@ -31,10 +33,14 @@ mod tests {
         let default = 100i16;
         let mut generator = ConstGenerator::from(default);
 
-        let bytes = generator.generate(Duration::ZERO);
-        assert_eq!(bytes, default.to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(Duration::ZERO, &mut buf).unwrap();
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), default.to_be_bytes());
 
-        let bytes = generator.generate(Duration::from_secs(1));
-        assert_eq!(bytes, default.to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(Duration::from_secs(1), &mut buf).unwrap();
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), default.to_be_bytes());
     }
 }

@@ -1,6 +1,6 @@
-use std::time::Duration;
+use std::{io, time::Duration};
 
 pub trait Generator {
-    fn generate(&mut self, delta: Duration) -> Vec<u8>;
+    fn write(&mut self, delta: Duration, buf: &mut dyn io::Write) -> io::Result<usize>;
     fn size_bytes(&self) -> usize;
 }

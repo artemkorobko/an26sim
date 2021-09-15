@@ -1,4 +1,11 @@
-use std::{cell::RefCell, rc::Rc, time::Duration};
+use std::{
+    cell::RefCell,
+    io::{self, BufWriter, Write},
+    rc::Rc,
+    time::Duration,
+};
+
+use bytes::{BufMut, BytesMut};
 
 use crate::common::{
     chain::Supplier,
@@ -56,25 +63,14 @@ impl USBParamGenerator {
         self.with_boxed_generator(Box::new(generator))
     }
 
-    fn try_generate(&mut self, delta: Duration) -> Option<Vec<u8>> {
-        match self.timer.count(delta) {
-            Elapsed::Yes(diff) => {
-                self.timer.count(diff);
-                Some(self.generate_params(diff))
-            }
-            Elapsed::No => None,
-        }
-    }
-
-    fn generate_params(&mut self, diff: Duration) -> Vec<u8> {
+    fn generate(&mut self, diff: Duration) -> io::Result<Vec<u8>> {
+        let delta = self.timer.delay() + diff;
         let size_bytes = self.generators_size_bytes();
-        let mut params = Vec::with_capacity(size_bytes);
+        let mut buf = Vec::with_capacity(size_bytes).writer();
         for generator in self.generators.iter_mut() {
-            let delta = self.timer.delay() + diff;
-            let bytes = generator.generate(delta);
-            params.extend(bytes);
+            generator.write(delta, &mut buf)?;
         }
-        params
+        Ok(buf.into_inner())
     }
 
     fn generators_size_bytes(&self) -> usize {
@@ -88,8 +84,19 @@ impl USBParamGenerator {
 impl Supplier<Option<Vec<u8>>> for USBParamGenerator {
     fn supply(&mut self) -> Option<Vec<u8>> {
         let delta = self.delta.borrow_mut().supply();
-        println!("delta: {:?}", delta);
-        self.try_generate(delta)
+        match self.timer.count(delta) {
+            Elapsed::Yes(diff) => {
+                self.timer.count(diff);
+                match self.generate(diff) {
+                    Ok(buf) => Some(buf),
+                    Err(error) => {
+                        xplm::debugln!("Error generating USB params: {:?}", error);
+                        None
+                    }
+                }
+            }
+            Elapsed::No => None,
+        }
     }
 }
 

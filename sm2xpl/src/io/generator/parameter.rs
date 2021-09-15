@@ -1,6 +1,7 @@
+use bytes::BufMut;
 use rand::Rng;
 
-use std::mem;
+use std::{io, mem};
 
 pub trait Parameter: Sized {
     fn increase(&self, target: Self) -> Option<Self>;
@@ -9,6 +10,7 @@ pub trait Parameter: Sized {
     fn to_be_bytes_vec(&self) -> Vec<u8>;
     fn random() -> Self;
     fn zero() -> Self;
+    fn write(&self, buf: &mut dyn io::Write) -> io::Result<usize>;
 }
 
 macro_rules! impl_parameter {
@@ -44,6 +46,10 @@ macro_rules! impl_parameter {
 
             fn zero() -> Self {
                 0
+            }
+
+            fn write(&self, buf: &mut dyn io::Write) -> io::Result<usize> {
+                buf.write(&self.to_be_bytes())
             }
         }
     };

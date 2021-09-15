@@ -1,4 +1,6 @@
-use std::{marker::PhantomData, time::Duration};
+use std::{io, marker::PhantomData, time::Duration};
+
+use bytes::BufMut;
 
 use super::{generator::Generator, parameter::Parameter};
 
@@ -38,14 +40,15 @@ impl<T: Parameter> BouncedGenerator<T> {
 }
 
 impl<T: Parameter> Generator for BouncedGenerator<T> {
-    fn generate(&mut self, delta: Duration) -> Vec<u8> {
-        let value = self.generator.generate(delta);
+    fn write(&mut self, delta: Duration, buf: &mut dyn io::Write) -> io::Result<usize> {
+        let mut tmp_buf = Vec::with_capacity(self.size_bytes()).writer();
+        self.generator.write(delta, &mut tmp_buf)?;
         self.count_sequence();
         if self.should_bounce() {
             self.reset_sequences();
-            T::random().to_be_bytes_vec()
+            T::random().write(buf)
         } else {
-            value
+            buf.write(&tmp_buf.into_inner())
         }
     }
 
@@ -69,28 +72,40 @@ mod test {
         let mut generator = BouncedGenerator::<u32>::bounce(Box::new(sequential)).every(3);
 
         let mut expected = default + step;
-        let bytes = generator.generate(delay.clone());
-        assert_eq!(bytes, expected.to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(delay.clone(), &mut buf).unwrap();
+        assert_eq!(size, 4);
+        assert_eq!(buf.into_inner(), expected.to_be_bytes());
 
         expected += step;
-        let bytes = generator.generate(delay.clone());
-        assert_eq!(bytes, expected.to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(delay.clone(), &mut buf).unwrap();
+        assert_eq!(size, 4);
+        assert_eq!(buf.into_inner(), expected.to_be_bytes());
 
         expected += step;
-        let bytes = generator.generate(delay.clone());
-        assert_ne!(bytes, expected.to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(delay.clone(), &mut buf).unwrap();
+        assert_eq!(size, 4);
+        assert_ne!(buf.into_inner(), expected.to_be_bytes());
 
         expected += step;
-        let bytes = generator.generate(delay.clone());
-        assert_eq!(bytes, expected.to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(delay.clone(), &mut buf).unwrap();
+        assert_eq!(size, 4);
+        assert_eq!(buf.into_inner(), expected.to_be_bytes());
 
         expected += step;
-        let bytes = generator.generate(delay.clone());
-        assert_eq!(bytes, expected.to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(delay.clone(), &mut buf).unwrap();
+        assert_eq!(size, 4);
+        assert_eq!(buf.into_inner(), expected.to_be_bytes());
 
         expected += step;
-        let bytes = generator.generate(delay.clone());
-        assert_ne!(bytes, expected.to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(delay.clone(), &mut buf).unwrap();
+        assert_eq!(size, 4);
+        assert_ne!(buf.into_inner(), expected.to_be_bytes());
     }
 
     #[test]

@@ -47,6 +47,8 @@ impl_to_bounced!(SequentialGenerator);
 mod tests {
     use std::time::Duration;
 
+    use bytes::BufMut;
+
     use crate::io::generator::generator::Generator;
 
     use super::*;
@@ -55,10 +57,12 @@ mod tests {
     fn u16_to_const_generator() {
         let default = 10u16;
         let mut gen = default.to_const_generator();
+        let mut buf = Vec::<u8>::new().writer();
 
-        let result = gen.generate(Duration::ZERO);
+        let size = gen.write(Duration::ZERO, &mut buf).unwrap();
 
-        assert_eq!(result, default.to_be_bytes());
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), default.to_be_bytes());
     }
 
     #[test]
@@ -66,20 +70,24 @@ mod tests {
         let default = 20u16;
         let step = 5;
         let mut gen = default.to_sequential_generator().with_step(step);
+        let mut buf = Vec::<u8>::new().writer();
 
-        let result = gen.generate(Duration::ZERO);
+        let size = gen.write(Duration::ZERO, &mut buf).unwrap();
 
-        assert_eq!(result, (default + step).to_be_bytes());
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), (default + step).to_be_bytes());
     }
 
     #[test]
     fn i16_to_const_generator() {
         let default = 1i16;
         let mut gen = default.to_const_generator();
+        let mut buf = Vec::<u8>::new().writer();
 
-        let result = gen.generate(Duration::ZERO);
+        let size = gen.write(Duration::ZERO, &mut buf).unwrap();
 
-        assert_eq!(result, default.to_be_bytes());
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), default.to_be_bytes());
     }
 
     #[test]
@@ -87,20 +95,24 @@ mod tests {
         let default = -5i16;
         let step = 15;
         let mut gen = default.to_sequential_generator().with_step(step);
+        let mut buf = Vec::<u8>::new().writer();
 
-        let result = gen.generate(Duration::ZERO);
+        let size = gen.write(Duration::ZERO, &mut buf).unwrap();
 
-        assert_eq!(result, (default + step).to_be_bytes());
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), (default + step).to_be_bytes());
     }
 
     #[test]
     fn u32_to_const_generator() {
         let default = 123u32;
         let mut gen = default.to_const_generator();
+        let mut buf = Vec::<u8>::new().writer();
 
-        let result = gen.generate(Duration::ZERO);
+        let size = gen.write(Duration::ZERO, &mut buf).unwrap();
 
-        assert_eq!(result, default.to_be_bytes());
+        assert_eq!(size, 4);
+        assert_eq!(buf.into_inner(), default.to_be_bytes());
     }
 
     #[test]
@@ -108,20 +120,24 @@ mod tests {
         let default = 55u32;
         let step = 8;
         let mut gen = default.to_sequential_generator().with_step(step);
+        let mut buf = Vec::<u8>::new().writer();
 
-        let result = gen.generate(Duration::ZERO);
+        let size = gen.write(Duration::ZERO, &mut buf).unwrap();
 
-        assert_eq!(result, (default + step).to_be_bytes());
+        assert_eq!(size, 4);
+        assert_eq!(buf.into_inner(), (default + step).to_be_bytes());
     }
 
     #[test]
     fn const_to_bounced_generator() {
         let default = 73i16;
         let mut gen = default.to_const_generator().to_bounced_generator();
+        let mut buf = Vec::<u8>::new().writer();
 
-        let result = gen.generate(Duration::ZERO);
+        let size = gen.write(Duration::ZERO, &mut buf).unwrap();
 
-        assert_eq!(result, default.to_be_bytes());
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), default.to_be_bytes());
     }
 
     #[test]
@@ -132,9 +148,11 @@ mod tests {
             .to_sequential_generator()
             .with_step(step)
             .to_bounced_generator();
+        let mut buf = Vec::<u8>::new().writer();
 
-        let result = gen.generate(Duration::ZERO);
+        let size = gen.write(Duration::ZERO, &mut buf).unwrap();
 
-        assert_eq!(result, (default + step).to_be_bytes());
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), (default + step).to_be_bytes());
     }
 }

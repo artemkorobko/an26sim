@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{io, time::Duration};
 
 use crate::common::timer::{DeltaCounter, Elapsed};
 
@@ -64,22 +64,22 @@ impl<T: Parameter + Copy> SequentialGenerator<T> {
 }
 
 impl<T: Parameter + Copy> Generator for SequentialGenerator<T> {
-    fn generate(&mut self, delta: Duration) -> Vec<u8> {
+    fn write(&mut self, delta: Duration, buf: &mut dyn io::Write) -> io::Result<usize> {
         match self.time.count(delta.clone()) {
             Elapsed::Yes(diff) => {
                 self.time.count(diff);
                 match self.generate_param() {
                     Some(value) => {
                         self.value = value;
-                        self.value.to_be_bytes_vec()
+                        value.write(buf)
                     }
                     None => {
                         self.operation = self.reverse_operation();
-                        self.generate(delta)
+                        self.write(delta, buf)
                     }
                 }
             }
-            Elapsed::No => self.value.to_be_bytes_vec(),
+            Elapsed::No => self.value.write(buf),
         }
     }
 
@@ -90,6 +90,8 @@ impl<T: Parameter + Copy> Generator for SequentialGenerator<T> {
 
 #[cfg(test)]
 mod tests {
+    use bytes::BufMut;
+
     use super::*;
 
     #[test]
@@ -98,11 +100,15 @@ mod tests {
         let step = 1;
         let mut generator = SequentialGenerator::from(default).with_step(step);
 
-        let value = generator.generate(Duration::ZERO);
-        assert_eq!(value, (default + step).to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(Duration::ZERO, &mut buf).unwrap();
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), (default + step).to_be_bytes());
 
-        let value = generator.generate(Duration::ZERO);
-        assert_eq!(value, (default + step + step).to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(Duration::ZERO, &mut buf).unwrap();
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), (default + step + step).to_be_bytes());
     }
 
     #[test]
@@ -114,11 +120,15 @@ mod tests {
             .with_step(step)
             .deferred(delay);
 
-        let value = generator.generate(Duration::ZERO);
-        assert_eq!(value, default.to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(Duration::ZERO, &mut buf).unwrap();
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), default.to_be_bytes());
 
-        let value = generator.generate(delay);
-        assert_eq!(value, (default + step).to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(delay, &mut buf).unwrap();
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), (default + step).to_be_bytes());
     }
 
     #[test]
@@ -129,14 +139,20 @@ mod tests {
             .with_step(step)
             .deferred(delay);
 
-        let value = generator.generate(Duration::ZERO);
-        assert_eq!(value, (i16::MAX - step).to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(Duration::ZERO, &mut buf).unwrap();
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), (i16::MAX - step).to_be_bytes());
 
-        let value = generator.generate(delay.clone());
-        assert_eq!(value, i16::MAX.to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(delay.clone(), &mut buf).unwrap();
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), i16::MAX.to_be_bytes());
 
-        let value = generator.generate(delay);
-        assert_eq!(value, (i16::MAX - step).to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(delay, &mut buf).unwrap();
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), (i16::MAX - step).to_be_bytes());
     }
 
     #[test]
@@ -148,14 +164,20 @@ mod tests {
             .deferred(delay)
             .decrease();
 
-        let value = generator.generate(Duration::ZERO);
-        assert_eq!(value, (i16::MIN + step).to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(Duration::ZERO, &mut buf).unwrap();
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), (i16::MIN + step).to_be_bytes());
 
-        let value = generator.generate(delay.clone());
-        assert_eq!(value, i16::MIN.to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(delay.clone(), &mut buf).unwrap();
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), i16::MIN.to_be_bytes());
 
-        let value = generator.generate(delay);
-        assert_eq!(value, (i16::MIN + step).to_be_bytes());
+        let mut buf = Vec::<u8>::new().writer();
+        let size = generator.write(delay, &mut buf).unwrap();
+        assert_eq!(size, 2);
+        assert_eq!(buf.into_inner(), (i16::MIN + step).to_be_bytes());
     }
 
     #[test]
