@@ -4,9 +4,9 @@ use xplm::flight_loop::{FlightLoopCallback, LoopState};
 
 use crate::{
     common::{
-        chain::{Chain, Mapper},
         delta::DeltaTimeSupplier,
         percent::Percent,
+        pipeline::{Mapper, Pipeline},
     },
     io::{
         generator::{helper::ToGenerator, usb::USBParamGenerator},
@@ -22,8 +22,8 @@ use crate::{
     },
 };
 
-type InputChain = Chain<XPlaneInputParams>;
-type OutputChain = Chain<Vec<u16>>;
+type InputPipeline = Pipeline<XPlaneInputParams>;
+type OutputPipeline = Pipeline<Vec<u16>>;
 
 pub struct Controller {
     menu: Box<PluginMenu>,
@@ -123,7 +123,7 @@ impl Controller {
             .with_const(OutMap::longitude(params.longitude).to_const_generator())
             .delay(Duration::from_millis(20));
 
-        Chain::supply(generator).map(SM2MXPlaneInputMapper::default());
+        Pipeline::supply(generator).map(SM2MXPlaneInputMapper::default());
         // .map(XPlaneParamDebouncer::new());
         //     .map(XPlaneParamInterpolator::new(
         //         input_params,

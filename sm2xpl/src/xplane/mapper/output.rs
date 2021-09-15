@@ -1,5 +1,5 @@
 use crate::{
-    common::{chain::Mapper, percent::Percent},
+    common::{percent::Percent, pipeline::Mapper},
     xplane::output_params::XPlaneOutputParams,
 };
 

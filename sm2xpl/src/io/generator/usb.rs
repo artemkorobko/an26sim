@@ -8,8 +8,8 @@ use std::{
 use bytes::{BufMut, BytesMut};
 
 use crate::common::{
-    chain::Supplier,
     delta::DeltaTimeSupplier,
+    pipeline::Supplier,
     timer::{DeltaCounter, Elapsed},
 };
 

@@ -1,7 +1,7 @@
 use bytes::Bytes;
 
 use crate::{
-    common::{bytes::BytesExt, chain::Mapper, percent::Percent},
+    common::{bytes::BytesExt, percent::Percent, pipeline::Mapper},
     xplane::{input_params::XPlaneInputParams, mapper::bit::bit_test},
 };
 
