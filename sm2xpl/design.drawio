@@ -49,13 +49,13 @@
                 <mxCell id="Ms_0TIsMvQakx48X9kYZ-17" value="XPlane" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;labelBackgroundColor=none;" parent="1" vertex="1">
                     <mxGeometry x="240" y="460" width="120" height="40" as="geometry"/>
                 </mxCell>
-                <mxCell id="Ms_0TIsMvQakx48X9kYZ-18" value="" style="endArrow=classic;html=1;fontSize=12;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=none;" parent="1" source="Ms_0TIsMvQakx48X9kYZ-14" target="Ms_0TIsMvQakx48X9kYZ-17" edge="1">
+                <mxCell id="Ms_0TIsMvQakx48X9kYZ-18" value="" style="endArrow=classic;html=1;fontSize=12;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=none;startArrow=classic;startFill=1;" parent="1" source="Ms_0TIsMvQakx48X9kYZ-14" target="Ms_0TIsMvQakx48X9kYZ-17" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="560" y="320" as="sourcePoint"/>
                         <mxPoint x="610" y="270" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="Ms_0TIsMvQakx48X9kYZ-19" value="Set aircraft parameters&lt;br&gt;on every rendering frame" style="edgeLabel;html=1;align=left;verticalAlign=middle;resizable=0;points=[];fontSize=12;labelBackgroundColor=none;" parent="Ms_0TIsMvQakx48X9kYZ-18" vertex="1" connectable="0">
+                <mxCell id="Ms_0TIsMvQakx48X9kYZ-19" value="Set input parameters" style="edgeLabel;html=1;align=left;verticalAlign=middle;resizable=0;points=[];fontSize=12;labelBackgroundColor=none;" parent="Ms_0TIsMvQakx48X9kYZ-18" vertex="1" connectable="0">
                     <mxGeometry x="-0.1333" relative="1" as="geometry">
                         <mxPoint x="10" y="3" as="offset"/>
                     </mxGeometry>
@@ -119,6 +119,11 @@
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="380" y="200" as="sourcePoint"/>
                         <mxPoint x="380.1700000000001" y="260" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2" value="Read output parameters" style="edgeLabel;html=1;align=right;verticalAlign=middle;resizable=0;points=[];fontSize=12;labelBackgroundColor=none;" vertex="1" connectable="0" parent="1">
+                    <mxGeometry x="150" y="459" as="geometry">
+                        <mxPoint x="139" y="-20" as="offset"/>
                     </mxGeometry>
                 </mxCell>
             </root>
