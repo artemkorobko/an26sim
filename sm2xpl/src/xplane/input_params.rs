@@ -4,7 +4,7 @@ use bytes::Buf;
 
 use crate::common::percent::Percent;
 
-use super::dataref::collection::DataRefs;
+use super::{dataref::collection::DataRefs, mapper::transcoder::*};
 
 const EXPECTED_BUF_BYTES: usize = 38;
 
@@ -69,343 +69,78 @@ impl From<Ref<'_, DataRefs>> for XPlaneInputParams {
 impl From<&[u8]> for XPlaneInputParams {
     fn from(mut buffer: &[u8]) -> Self {
         let mut params = XPlaneInputParams::default();
-        params.latitude = (buffer.get_u32() as f64).scale(0.0, u32::MAX as f64, 0.0, 90.0);
-        params.longitude = (buffer.get_u32() as f64).scale(0.0, u32::MAX as f64, 0.0, 360.0);
-        params.altitude = buffer.get_i16() as f64;
-        params.heading = (buffer.get_i16() as f32).scale(0.0, 32767.0, 0.0, 359.99);
-        params.pitch = (buffer.get_i16() as f32).scale(-32767.0, 32767.0, -45.0, 45.0);
-        params.roll = (buffer.get_i16() as f32).scale(-32767.0, 32767.0, -90.0, 90.0);
-        params.ailerons = (buffer.get_i16() as f32).scale(-32767.0, 32767.0, -1.0, 1.0);
-        params.elevator = (buffer.get_i16() as f32).scale(-32767.0, 32767.0, -1.0, 1.0);
-        params.rudder = (buffer.get_i16() as f32).scale(-32767.0, 32767.0, -1.0, 1.0);
-        params.flaps = (buffer.get_i16() as f32).scale(0.0, 32767.0, 0.0, 1.0);
-        params.engine_left = (buffer.get_i16() as f32).scale(0.0, 32767.0, 0.0, 166.0);
-        params.engine_right = (buffer.get_i16() as f32).scale(0.0, 32767.0, 0.0, 166.0);
-        params.gear_front = (buffer.get_i16() as f32).scale(0.0, 32767.0, 0.0, 1.0);
-        params.gear_left = (buffer.get_i16() as f32).scale(0.0, 32767.0, 0.0, 1.0);
-        params.gear_right = (buffer.get_i16() as f32).scale(0.0, 32767.0, 0.0, 1.0);
-        let param = buffer.get_u16();
-        params.light_landing = param & 0b1 == 1;
-        params.light_navigation = (param >> 1) & 0b1 == 1;
-        params.light_beacon = (param >> 2) & 0b1 == 1;
-        let param = buffer.get_u16();
-        params.reset = param & 0b1 == 1;
+        params.latitude = latitude::decode(buffer.get_u32());
+        params.longitude = longitude::decode(buffer.get_u32());
+        params.altitude = altitude::decode(buffer.get_i16());
+        params.heading = heading::decode(buffer.get_u16());
+        params.pitch = pitch::decode(buffer.get_i16());
+        params.roll = roll::decode(buffer.get_i16());
+        params.ailerons = ailerons::decode(buffer.get_i16());
+        params.elevator = elevator::decode(buffer.get_i16());
+        params.rudder = rudder::decode(buffer.get_i16());
+        params.flaps = flaps::decode(buffer.get_u16());
+        params.engine_left = engine::decode(buffer.get_u16());
+        params.engine_right = engine::decode(buffer.get_u16());
+        params.gear_front = gear::decode(buffer.get_u16());
+        params.gear_left = gear::decode(buffer.get_u16());
+        params.gear_right = gear::decode(buffer.get_u16());
+        let (landing, navigation, beacon) = light::decode(buffer.get_u16());
+        params.light_landing = landing;
+        params.light_navigation = navigation;
+        params.light_beacon = beacon;
+        params.reset = reset::decode(buffer.get_u16());
         params
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use bytes::BufMut;
     use float_eq::assert_float_eq;
 
     use super::*;
 
     #[test]
-    fn map_latitude() {
-        let input = input_with_u32_param(2402881062, 0);
+    fn read_from_input_buffer() {
+        let mut buffer = Vec::with_capacity(EXPECTED_BUF_BYTES);
+        buffer.put_u32(2402881062); // latitude
+        buffer.put_u32(368431135); // longitude
+        buffer.put_i16(150); // altitude
+        buffer.put_i16(16384); // heading
+        buffer.put_i16(-32767); // pitch
+        buffer.put_i16(-32767); // roll
+        buffer.put_i16(-32767); // ailerons
+        buffer.put_i16(32767); // elevator
+        buffer.put_i16(0); // rudder
+        buffer.put_u16(32768); // flaps
+        buffer.put_u16(0); // engine left
+        buffer.put_u16(32768); // engine right
+        buffer.put_u16(0); // gear front
+        buffer.put_u16(32768); // gear left
+        buffer.put_u16(65535); // gear right
+        buffer.put_u16(7); // light
+        buffer.put_u16(1); // reset
 
-        let params = XPlaneInputParams::from(input.as_ref());
+        let params = XPlaneInputParams::from(buffer.as_ref());
 
         assert_float_eq!(params.latitude, 50.351791, abs <= 0.00001);
-    }
-
-    #[test]
-    fn map_longitude() {
-        let input = input_with_u32_param(368431135, 4);
-
-        let params = XPlaneInputParams::from(input.as_ref());
-
         assert_float_eq!(params.longitude, 30.881541, abs <= 0.00001);
-    }
-
-    #[test]
-    fn map_altitude() {
-        let pos = 8;
-
-        let input = input_with_u16_param(0, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.altitude, 0.0, abs <= 0.001);
-
-        let input = input_with_u16_param(4000, 8);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.altitude, 4000.0, abs <= 0.001);
-
-        let input = input_with_u16_param(8000, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.altitude, 8000.0, abs <= 0.001);
-    }
-
-    #[test]
-    fn map_heading() {
-        let pos = 10;
-
-        let input = input_with_i16_param(0, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.heading, 0.0, abs <= 0.001);
-
-        let input = input_with_i16_param(16384, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.heading, 180.0, abs <= 0.001);
-
-        let input = input_with_i16_param(32767, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.heading, 359.99, abs <= 0.001);
-    }
-
-    #[test]
-    fn map_pitch() {
-        let pos = 12;
-
-        let input = input_with_i16_param(-32767, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.pitch, -45.0, abs <= 0.001);
-
-        let input = input_with_i16_param(0, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.pitch, 0.0, abs <= 0.001);
-
-        let input = input_with_i16_param(32767, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.pitch, 45.0, abs <= 0.001);
-    }
-
-    #[test]
-    fn map_roll() {
-        let pos = 14;
-
-        let input = input_with_i16_param(-32767, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.roll, -90.0, abs <= 0.001);
-
-        let input = input_with_i16_param(0, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.roll, 0.0, abs <= 0.001);
-
-        let input = input_with_i16_param(32767, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.roll, 90.0, abs <= 0.001);
-    }
-
-    #[test]
-    fn map_ailerons() {
-        let pos = 16;
-
-        let input = input_with_i16_param(-32767, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
+        assert_float_eq!(params.altitude, 150.0, abs <= 0.001);
+        assert_float_eq!(params.heading, 90.0, abs <= 0.01);
+        assert_float_eq!(params.pitch, -45.0, abs <= 0.01);
+        assert_float_eq!(params.roll, -90.0, abs <= 0.01);
         assert_float_eq!(params.ailerons, -1.0, abs <= 0.001);
-
-        let input = input_with_i16_param(0, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.ailerons, 0.0, abs <= 0.001);
-
-        let input = input_with_i16_param(32767, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.ailerons, 1.0, abs <= 0.001);
-    }
-
-    #[test]
-    fn map_elevator() {
-        let pos = 18;
-
-        let input = input_with_i16_param(-32767, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.elevator, -1.0, abs <= 0.001);
-
-        let input = input_with_i16_param(0, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.elevator, 0.0, abs <= 0.001);
-
-        let input = input_with_i16_param(32767, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
         assert_float_eq!(params.elevator, 1.0, abs <= 0.001);
-    }
-
-    #[test]
-    fn map_rudder() {
-        let pos = 20;
-
-        let input = input_with_i16_param(-32767, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.rudder, -1.0, abs <= 0.001);
-
-        let input = input_with_i16_param(0, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
         assert_float_eq!(params.rudder, 0.0, abs <= 0.001);
-
-        let input = input_with_i16_param(32767, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.rudder, 1.0, abs <= 0.001);
-    }
-
-    #[test]
-    fn map_flaps() {
-        let pos = 22;
-
-        let input = input_with_i16_param(0, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.flaps, 0.0, abs <= 0.001);
-
-        let input = input_with_i16_param(16384, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
         assert_float_eq!(params.flaps, 0.5, abs <= 0.001);
-
-        let input = input_with_i16_param(32767, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.flaps, 1.0, abs <= 0.001);
-    }
-
-    #[test]
-    fn map_engine_left() {
-        let pos = 24;
-
-        let input = input_with_i16_param(0, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.engine_left, 0.0, abs <= 0.001);
-
-        let input = input_with_i16_param(16384, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.engine_left, 83.0, abs <= 0.005);
-
-        let input = input_with_i16_param(32767, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.engine_left, 166.0, abs <= 0.001);
-    }
-
-    #[test]
-    fn map_engine_right() {
-        let pos = 26;
-
-        let input = input_with_i16_param(0, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.engine_right, 0.0, abs <= 0.001);
-
-        let input = input_with_i16_param(16384, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.engine_right, 83.0, abs <= 0.005);
-
-        let input = input_with_i16_param(32767, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.engine_right, 166.0, abs <= 0.001);
-    }
-
-    #[test]
-    fn map_gear_front() {
-        let pos = 28;
-
-        let input = input_with_i16_param(0, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.gear_front, 0.0, abs <= 0.001);
-
-        let input = input_with_i16_param(16384, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.gear_front, 0.5, abs <= 0.005);
-
-        let input = input_with_i16_param(32767, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.gear_front, 1.0, abs <= 0.001);
-    }
-
-    #[test]
-    fn map_gear_left() {
-        let pos = 30;
-
-        let input = input_with_i16_param(0, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.gear_left, 0.0, abs <= 0.001);
-
-        let input = input_with_i16_param(16384, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.gear_left, 0.5, abs <= 0.005);
-
-        let input = input_with_i16_param(32767, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.gear_left, 1.0, abs <= 0.001);
-    }
-
-    #[test]
-    fn map_gear_right() {
-        let pos = 32;
-
-        let input = input_with_i16_param(0, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.gear_right, 0.0, abs <= 0.001);
-
-        let input = input_with_i16_param(16384, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.gear_right, 0.5, abs <= 0.005);
-
-        let input = input_with_i16_param(32767, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_float_eq!(params.gear_right, 1.0, abs <= 0.001);
-    }
-
-    #[test]
-    fn map_light_landing() {
-        let pos = 34;
-
-        let input = input_with_i16_param(0, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_eq!(params.light_landing, false);
-
-        let input = input_with_i16_param(1, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
+        assert_float_eq!(params.engine_left, 0.0, abs <= 0.01);
+        assert_float_eq!(params.engine_right, 83.0, abs <= 0.01);
+        assert_float_eq!(params.gear_front, 0.0, abs <= 0.01);
+        assert_float_eq!(params.gear_left, 0.5, abs <= 0.01);
+        assert_float_eq!(params.gear_right, 1.0, abs <= 0.01);
         assert_eq!(params.light_landing, true);
-    }
-
-    #[test]
-    fn map_light_navigation() {
-        let pos = 34;
-
-        let input = input_with_i16_param(1, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_eq!(params.light_navigation, false);
-
-        let input = input_with_i16_param(2, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
         assert_eq!(params.light_navigation, true);
-    }
-
-    #[test]
-    fn map_light_beacon() {
-        let pos = 34;
-
-        let input = input_with_i16_param(3, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_eq!(params.light_beacon, false);
-
-        let input = input_with_i16_param(4, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_eq!(params.light_beacon, true);
-    }
-
-    #[test]
-    fn map_reset() {
-        let pos = 36;
-
-        let input = input_with_i16_param(0, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
-        assert_eq!(params.reset, false);
-
-        let input = input_with_i16_param(1, pos);
-        let params = XPlaneInputParams::from(input.as_ref());
+        assert_eq!(params.light_landing, true);
         assert_eq!(params.reset, true);
-    }
-
-    fn input_with_i16_param(value: i16, pos: usize) -> Vec<u8> {
-        input_with_buffer(&value.to_be_bytes(), pos)
-    }
-
-    fn input_with_u16_param(value: u16, pos: usize) -> Vec<u8> {
-        input_with_buffer(&value.to_be_bytes(), pos)
-    }
-
-    fn input_with_u32_param(value: u32, pos: usize) -> Vec<u8> {
-        input_with_buffer(&value.to_be_bytes(), pos)
-    }
-
-    fn input_with_buffer(buffer: &[u8], pos: usize) -> Vec<u8> {
-        let mut res_buf = vec![0u8; EXPECTED_BUF_BYTES];
-        res_buf.splice(pos..pos + buffer.len(), buffer.into_iter().cloned());
-        res_buf
     }
 }

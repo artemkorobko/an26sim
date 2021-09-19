@@ -1,11 +1,11 @@
 use std::{
     cell::RefCell,
-    io::{self, BufWriter, Write},
+    io::{self},
     rc::Rc,
     time::Duration,
 };
 
-use bytes::{BufMut, BytesMut};
+use bytes::BufMut;
 
 use crate::common::{
     delta::DeltaTimeSupplier,
