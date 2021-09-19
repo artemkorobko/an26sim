@@ -1,3 +1,7 @@
+use std::cell::Ref;
+
+use super::dataref::collection::DataRefs;
+
 #[derive(Default, Copy, Clone)]
 pub struct XPlaneOutputParams {
     pub terrain_distance: f32,
@@ -16,8 +20,39 @@ pub struct XPlaneOutputParams {
     pub gear_front: f32,
     pub gear_left: f32,
     pub gear_right: f32,
-    pub landing: bool,
-    pub navigation: bool,
-    pub beacon: bool,
+    pub light_landing: bool,
+    pub light_navigation: bool,
+    pub light_beacon: bool,
     pub reset: bool,
+}
+
+impl From<Ref<'_, DataRefs>> for XPlaneOutputParams {
+    fn from(datarefs: Ref<DataRefs>) -> Self {
+        let coords = datarefs.location.coords();
+        let local = datarefs.location.local();
+        let engines = datarefs.engines.get();
+        let gears = datarefs.gears.get();
+        Self {
+            terrain_distance: datarefs.terrain_probe.distance(local.x, local.y, local.z),
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            altitude: coords.altitude,
+            heading: datarefs.orientation.heading(),
+            pitch: datarefs.orientation.pitch(),
+            roll: datarefs.orientation.roll(),
+            ailerons: datarefs.surfaces.ailerons(),
+            elevator: datarefs.surfaces.elevator(),
+            rudder: datarefs.surfaces.rudder(),
+            flaps: datarefs.general.fps(),
+            engine_left: engines.left,
+            engine_right: engines.right,
+            gear_front: gears.front,
+            gear_left: gears.left,
+            gear_right: gears.right,
+            light_landing: datarefs.lights.landing(),
+            light_navigation: datarefs.lights.navigation(),
+            light_beacon: datarefs.lights.beacon(),
+            reset: false,
+        }
+    }
 }

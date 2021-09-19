@@ -4,6 +4,7 @@ use num_traits::{Float, NumCast};
 
 use super::{generic::Debouncer, linear::LinearDebouncer};
 
+#[derive(Default)]
 pub struct AngularDebouncer<T: Default> {
     linear: LinearDebouncer<T>,
 }

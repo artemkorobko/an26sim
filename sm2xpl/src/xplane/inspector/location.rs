@@ -47,7 +47,7 @@ impl LocationBlock {
         update_widget(self.latitude, &format_f64(coords.latitude))?;
         update_widget(self.longitude, &format_f64(coords.longitude))?;
         update_widget(self.altitude, &format_altitude(coords.altitude))?;
-        update_widget(self.terrain, &format_altitude(terrain))?;
+        update_widget(self.terrain, &format_altitude(terrain as f64))?;
         Ok(())
     }
 }
