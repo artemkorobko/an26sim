@@ -17,7 +17,9 @@ use crate::{
         dataref::collection::DataRefs,
         input_params::XPlaneInputParams,
         inspector::window::InspectorWindow,
-        mapper::{input::SM2MXPlaneInputMapper, output::XPlaneSM2MOutputMapper as OutMap},
+        mapper::{
+            input::SM2MXPlaneInputMapper, output::XPlaneSM2MOutputMapper as OutMap, transcoder,
+        },
         menu::{instance::PluginMenu, item::MenuItem},
     },
 };
@@ -119,8 +121,30 @@ impl Controller {
         let datarefs = self.datarefs.borrow();
         let params = XPlaneInputParams::from(datarefs);
         let generator = USBParamGenerator::from(self.delta_supplier.clone())
-            .with_const(OutMap::latitude(params.latitude).to_const_generator())
-            .with_const(OutMap::longitude(params.longitude).to_const_generator())
+            .with_const(transcoder::latitude::encode(params.latitude).to_const_generator())
+            .with_const(transcoder::longitude::encode(params.longitude).to_const_generator())
+            .with_const(transcoder::altitude::encode(params.altitude).to_const_generator())
+            .with_const(transcoder::heading::encode(params.heading).to_const_generator())
+            .with_const(transcoder::pitch::encode(params.pitch).to_const_generator())
+            .with_const(transcoder::roll::encode(params.roll).to_const_generator())
+            .with_const(transcoder::ailerons::encode(params.ailerons).to_const_generator())
+            .with_const(transcoder::elevator::encode(params.elevator).to_const_generator())
+            .with_const(transcoder::rudder::encode(params.rudder).to_const_generator())
+            .with_const(transcoder::flaps::encode(params.flaps).to_const_generator())
+            .with_const(transcoder::engine::encode(params.engine_left).to_const_generator())
+            .with_const(transcoder::engine::encode(params.engine_right).to_const_generator())
+            .with_const(transcoder::gear::encode(params.gear_front).to_const_generator())
+            .with_const(transcoder::gear::encode(params.gear_left).to_const_generator())
+            .with_const(transcoder::gear::encode(params.gear_right).to_const_generator())
+            .with_const(
+                transcoder::light::encode(
+                    params.light_landing,
+                    params.light_navigation,
+                    params.light_landing,
+                )
+                .to_const_generator(),
+            )
+            .with_const(transcoder::reset::encode(params.reset).to_const_generator())
             .delay(Duration::from_millis(20));
 
         Pipeline::supply(generator).map(SM2MXPlaneInputMapper::default());
