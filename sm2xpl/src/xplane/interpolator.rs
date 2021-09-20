@@ -21,7 +21,7 @@ impl XPlaneParamInterpolator {
 impl Mapper<Option<XPlaneInputParams>, XPlaneInputParams> for XPlaneParamInterpolator {
     fn map(&mut self, input: Option<XPlaneInputParams>) -> XPlaneInputParams {
         if let Some(target) = input {
-            self.params = target;
+            // self.params = target;
             self.params.clone() // update
         } else {
             self.params.clone() // interpolate

@@ -53,7 +53,6 @@ impl XPlaneInspectorUpdater {
 
     fn update_inspector(&mut self, _: &XPlaneInputParams, delta: &Duration) {
         let datarefs = self.datarefs.borrow();
-        let local = datarefs.location.local();
         let result = self.inspector.borrow_mut().update(
             &datarefs,
             &mut self.input.borrow_mut(),

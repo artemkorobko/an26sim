@@ -2,8 +2,6 @@ use std::cell::Ref;
 
 use bytes::Buf;
 
-use crate::common::percent::Percent;
-
 use super::{dataref::collection::DataRefs, mapper::transcoder::*};
 
 const EXPECTED_BUF_BYTES: usize = 38;
@@ -52,7 +50,7 @@ impl From<Ref<'_, DataRefs>> for XPlaneInputParams {
             ailerons: datarefs.surfaces.ailerons(),
             elevator: datarefs.surfaces.elevator(),
             rudder: datarefs.surfaces.rudder(),
-            flaps: datarefs.general.fps(),
+            flaps: datarefs.surfaces.flaps(),
             engine_left: engines.left,
             engine_right: engines.right,
             gear_front: gears.front,

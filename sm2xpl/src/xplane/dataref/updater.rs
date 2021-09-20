@@ -17,7 +17,7 @@ impl XPlaneDataRefUpdater {
         let mut datarefs = self.datarefs.borrow_mut();
         datarefs
             .location
-            .set_coords(input.latitude, input.longitude, input.latitude);
+            .set_coords(input.latitude, input.longitude, input.altitude);
         datarefs.orientation.set_heading(input.heading);
         datarefs.orientation.set_pitch(input.pitch);
         datarefs.orientation.set_roll(input.roll);
