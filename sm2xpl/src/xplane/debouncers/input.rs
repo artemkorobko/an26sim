@@ -7,6 +7,11 @@ use super::{
     linear::LinearDebouncer,
 };
 
+enum DebouncerState {
+    Initial,
+    Prepared,
+}
+
 pub struct XPlaneParamDebouncer {
     last_debounce: Instant,
     latitude: LinearDebouncer<f64>,
@@ -28,6 +33,7 @@ pub struct XPlaneParamDebouncer {
     light_navigation: BooleanDebouncer,
     light_beacon: BooleanDebouncer,
     reset: BooleanDebouncer,
+    state: DebouncerState,
 }
 
 impl XPlaneParamDebouncer {
@@ -53,41 +59,76 @@ impl XPlaneParamDebouncer {
             light_navigation: BooleanDebouncer::default(),
             light_beacon: BooleanDebouncer::default(),
             reset: BooleanDebouncer::default(),
+            state: DebouncerState::Initial,
         }
     }
 
-    fn debounce(&mut self, target: XPlaneInputParams) -> XPlaneInputParams {
+    fn reset(&mut self, params: XPlaneInputParams) {
+        self.latitude.assign(params.latitude);
+        self.longitude.assign(params.longitude);
+        self.altitude.assign(params.altitude);
+        self.heading.assign(params.heading);
+        self.pitch.assign(params.pitch);
+        self.roll.assign(params.roll);
+        self.ailerons.assign(params.ailerons);
+        self.elevator.assign(params.elevator);
+        self.rudder.assign(params.rudder);
+        self.flaps.assign(params.flaps);
+        self.engine_left.assign(params.engine_left);
+        self.engine_right.assign(params.engine_right);
+        self.gear_front.assign(params.gear_front);
+        self.gear_left.assign(params.gear_left);
+        self.gear_right.assign(params.gear_right);
+        self.light_landing.assign(params.light_landing);
+        self.light_navigation.assign(params.light_navigation);
+        self.light_beacon.assign(params.light_beacon);
+        self.reset.assign(params.reset);
+    }
+
+    fn debounce(&mut self, params: XPlaneInputParams) -> XPlaneInputParams {
         let now = Instant::now();
         let delta = now.duration_since(self.last_debounce);
         self.last_debounce = now;
         XPlaneInputParams {
-            latitude: self.latitude.debounce(target.latitude, &delta),
-            longitude: self.longitude.debounce(target.longitude, &delta),
-            altitude: self.altitude.debounce(target.altitude, &delta),
-            heading: self.heading.debounce(target.heading, &delta),
-            pitch: self.pitch.debounce(target.pitch, &delta),
-            roll: self.roll.debounce(target.roll, &delta),
-            ailerons: self.ailerons.debounce(target.ailerons, &delta),
-            elevator: self.elevator.debounce(target.elevator, &delta),
-            rudder: self.rudder.debounce(target.rudder, &delta),
-            flaps: self.flaps.debounce(target.flaps, &delta),
-            engine_left: self.engine_left.debounce(target.engine_left, &delta),
-            engine_right: self.engine_right.debounce(target.engine_right, &delta),
-            gear_front: self.gear_front.debounce(target.gear_front, &delta),
-            gear_left: self.gear_left.debounce(target.gear_left, &delta),
-            gear_right: self.gear_right.debounce(target.gear_right, &delta),
-            light_landing: self.light_landing.debounce(target.light_landing, &delta),
+            latitude: self.latitude.debounce(params.latitude, &delta),
+            longitude: self.longitude.debounce(params.longitude, &delta),
+            altitude: self.altitude.debounce(params.altitude, &delta),
+            heading: self.heading.debounce(params.heading, &delta),
+            pitch: self.pitch.debounce(params.pitch, &delta),
+            roll: self.roll.debounce(params.roll, &delta),
+            ailerons: self.ailerons.debounce(params.ailerons, &delta),
+            elevator: self.elevator.debounce(params.elevator, &delta),
+            rudder: self.rudder.debounce(params.rudder, &delta),
+            flaps: self.flaps.debounce(params.flaps, &delta),
+            engine_left: self.engine_left.debounce(params.engine_left, &delta),
+            engine_right: self.engine_right.debounce(params.engine_right, &delta),
+            gear_front: self.gear_front.debounce(params.gear_front, &delta),
+            gear_left: self.gear_left.debounce(params.gear_left, &delta),
+            gear_right: self.gear_right.debounce(params.gear_right, &delta),
+            light_landing: self.light_landing.debounce(params.light_landing, &delta),
             light_navigation: self
                 .light_navigation
-                .debounce(target.light_navigation, &delta),
-            light_beacon: self.light_beacon.debounce(target.light_beacon, &delta),
-            reset: self.reset.debounce(target.reset, &delta),
+                .debounce(params.light_navigation, &delta),
+            light_beacon: self.light_beacon.debounce(params.light_beacon, &delta),
+            reset: self.reset.debounce(params.reset, &delta),
         }
     }
 }
 
 impl Mapper<Option<XPlaneInputParams>, Option<XPlaneInputParams>> for XPlaneParamDebouncer {
     fn map(&mut self, input: Option<XPlaneInputParams>) -> Option<XPlaneInputParams> {
-        input.map(|params| self.debounce(params))
+        if let Some(params) = input {
+            let result = match self.state {
+                DebouncerState::Initial => {
+                    self.reset(params);
+                    self.state = DebouncerState::Prepared;
+                    self.debounce(params)
+                }
+                DebouncerState::Prepared => self.debounce(params),
+            };
+            Some(result)
+        } else {
+            None
+        }
     }
 }
