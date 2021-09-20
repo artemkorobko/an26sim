@@ -3,7 +3,7 @@ use xplm::data::borrowed::FindError;
 use super::variables::{
     engines::EnginesDataRef, gears::GearsDataRef, general::GeneralDataRef, lights::LightsDataRef,
     location::LocationDataRef, orientation::OrientationDataRef, surfaces::SurfacesDataRef,
-    terrain_probe::TerrainProbe, view::ViewDataRef,
+    view::ViewDataRef,
 };
 
 pub struct DataRefs {
@@ -15,11 +15,10 @@ pub struct DataRefs {
     pub gears: GearsDataRef,
     pub lights: LightsDataRef,
     pub view: ViewDataRef,
-    pub terrain_probe: TerrainProbe,
 }
 
 impl DataRefs {
-    pub fn new(cabin_alt: f32) -> Result<Self, FindError> {
+    pub fn new() -> Result<Self, FindError> {
         Ok(Self {
             general: GeneralDataRef::new()?,
             location: LocationDataRef::new()?,
@@ -29,7 +28,6 @@ impl DataRefs {
             gears: GearsDataRef::new()?,
             lights: LightsDataRef::new()?,
             view: ViewDataRef::new()?,
-            terrain_probe: TerrainProbe::new(cabin_alt)?,
         })
     }
 }

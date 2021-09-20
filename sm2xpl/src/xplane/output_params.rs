@@ -4,7 +4,7 @@ use super::dataref::collection::DataRefs;
 
 #[derive(Default, Copy, Clone)]
 pub struct XPlaneOutputParams {
-    pub terrain_distance: f32,
+    pub agl: f32,
     pub latitude: f64,
     pub longitude: f64,
     pub altitude: f64,
@@ -29,11 +29,10 @@ pub struct XPlaneOutputParams {
 impl From<Ref<'_, DataRefs>> for XPlaneOutputParams {
     fn from(datarefs: Ref<DataRefs>) -> Self {
         let coords = datarefs.location.coords();
-        let local = datarefs.location.local();
         let engines = datarefs.engines.get();
         let gears = datarefs.gears.get();
         Self {
-            terrain_distance: datarefs.terrain_probe.distance(local.x, local.y, local.z),
+            agl: datarefs.location.agl(),
             latitude: coords.latitude,
             longitude: coords.longitude,
             altitude: coords.altitude,

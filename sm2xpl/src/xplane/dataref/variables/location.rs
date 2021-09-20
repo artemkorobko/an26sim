@@ -1,5 +1,5 @@
 use xplm::data::borrowed::{DataRef, FindError};
-use xplm::data::{DataRead, DataReadWrite, ReadWrite};
+use xplm::data::{DataRead, DataReadWrite, ReadOnly, ReadWrite};
 use xplm_sys::{XPLMLocalToWorld, XPLMWorldToLocal};
 
 #[derive(Default)]
@@ -22,6 +22,8 @@ pub struct LocationDataRef {
     local_y: DataRef<f64, ReadWrite>,
     // Location of the plane in OpenGL coordinates (meters, up in the air)
     local_z: DataRef<f64, ReadWrite>,
+    // AGL meters above the ground level
+    y_agl: DataRef<f32, ReadOnly>,
 }
 
 impl LocationDataRef {
@@ -30,7 +32,12 @@ impl LocationDataRef {
             local_x: DataRef::find("sim/flightmodel/position/local_x")?.writeable()?,
             local_y: DataRef::find("sim/flightmodel/position/local_y")?.writeable()?,
             local_z: DataRef::find("sim/flightmodel/position/local_z")?.writeable()?,
+            y_agl: DataRef::find("sim/flightmodel/position/y_agl")?,
         })
+    }
+
+    pub fn agl(&self) -> f32 {
+        self.y_agl.get()
     }
 
     pub fn coords(&self) -> Coords {

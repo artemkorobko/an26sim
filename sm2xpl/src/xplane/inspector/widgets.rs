@@ -59,8 +59,7 @@ impl Widgets {
         self.surfaces.update(&data_refs.surfaces)?;
         self.lights.update(&data_refs.lights)?;
         self.view.update(&data_refs.view)?;
-        self.location
-            .update(&data_refs.location, &data_refs.terrain_probe)?;
+        self.location.update(&data_refs.location)?;
         self.orientation.update(&data_refs.orientation)?;
         self.engines.update(&data_refs.engines)?;
         self.gears.update(&data_refs.gears)
