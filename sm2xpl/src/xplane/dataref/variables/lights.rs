@@ -28,35 +28,32 @@ impl LightsDataRef {
         self.landing_lights_on.get() == ON
     }
 
+    pub fn set_landing(&mut self, state: bool) {
+        match state {
+            true => self.landing_lights_on.set(ON),
+            false => self.landing_lights_on.set(OFF),
+        }
+    }
+
     pub fn navigation(&self) -> bool {
         self.navigation_lights_on.get() == ON
+    }
+
+    pub fn set_navigation(&mut self, state: bool) {
+        match state {
+            true => self.navigation_lights_on.set(ON),
+            false => self.navigation_lights_on.set(OFF),
+        }
     }
 
     pub fn beacon(&self) -> bool {
         self.beacon_on.get() == ON
     }
 
-    pub fn landing_on(&mut self) {
-        self.landing_lights_on.set(ON);
-    }
-
-    pub fn landing_off(&mut self) {
-        self.landing_lights_on.set(OFF);
-    }
-
-    pub fn navigation_on(&mut self) {
-        self.navigation_lights_on.set(ON);
-    }
-
-    pub fn navigation_off(&mut self) {
-        self.navigation_lights_on.set(OFF);
-    }
-
-    pub fn beacon_on(&mut self) {
-        self.beacon_on.set(ON);
-    }
-
-    pub fn beacon_off(&mut self) {
-        self.beacon_on.set(OFF);
+    pub fn set_beacon(&mut self, state: bool) {
+        match state {
+            true => self.beacon_on.set(ON),
+            false => self.beacon_on.set(OFF),
+        }
     }
 }

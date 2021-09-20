@@ -29,9 +29,9 @@ impl XPlaneDataRefUpdater {
         datarefs
             .gears
             .set(input.gear_front, input.gear_left, input.gear_right);
-        datarefs.lights.landing_on();
-        datarefs.lights.navigation_on();
-        datarefs.lights.beacon_on();
+        datarefs.lights.set_landing(input.light_landing);
+        datarefs.lights.set_navigation(input.light_navigation);
+        datarefs.lights.set_beacon(input.light_beacon);
     }
 
     fn should_update_datarefs(&self) -> bool {
