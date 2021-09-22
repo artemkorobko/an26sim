@@ -26,7 +26,7 @@ pub struct IOBlock {
 
 impl IOBlock {
     pub fn new(parent: XPWidgetID, rect: &Rect<i32>) -> ApiResult<(Self, Rect<i32>)> {
-        let in_state = create_label!("\u{21e2} State:", parent, &rect);
+        let in_state = create_label!("\u{21e2} State:", parent, rect);
         let rect = rect.to_next_line();
         let in_transferred = create_label!("\u{21e2} Received:", parent, &rect);
         let rect = rect.to_next_line();

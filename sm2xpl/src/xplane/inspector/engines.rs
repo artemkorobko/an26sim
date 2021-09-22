@@ -18,7 +18,7 @@ pub struct EnginesBlock {
 
 impl EnginesBlock {
     pub fn new(parent: XPWidgetID, rect: &Rect<i32>) -> ApiResult<(Self, Rect<i32>)> {
-        let left = create_label!("Engine left:", parent, &rect);
+        let left = create_label!("Engine left:", parent, rect);
         let rect = rect.to_next_line();
         let right = create_label!("Engine right:", parent, &rect);
         let block = Self { left, right };

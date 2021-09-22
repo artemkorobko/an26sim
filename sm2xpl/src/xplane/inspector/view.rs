@@ -16,7 +16,7 @@ pub struct ViewBlock {
 
 impl ViewBlock {
     pub fn new(parent: XPWidgetID, rect: &Rect<i32>) -> ApiResult<(Self, Rect<i32>)> {
-        let x = create_label!("View X:", parent, &rect);
+        let x = create_label!("View X:", parent, rect);
         let rect = rect.to_next_line();
         let y = create_label!("View Y:", parent, &rect);
         let rect = rect.to_next_line();

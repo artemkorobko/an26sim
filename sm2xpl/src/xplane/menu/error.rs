@@ -1,6 +1,4 @@
-use thiserror::Error;
-
-#[derive(Error, Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum MenuError {
     #[error("Unable to find plugins menu")]
     PluginsMenu,

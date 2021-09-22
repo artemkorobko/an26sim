@@ -9,10 +9,10 @@ pub type ApiResult<T> = Result<T, MenuError>;
 
 pub fn find_plugins_menu() -> ApiResult<XPLMMenuID> {
     let menu = unsafe { XPLMFindPluginsMenu() };
-    if menu != std::ptr::null_mut() {
-        Ok(menu)
-    } else {
+    if menu.is_null() {
         Err(MenuError::PluginsMenu)
+    } else {
+        Ok(menu)
     }
 }
 
@@ -91,10 +91,10 @@ pub fn create_menu(
         )
     };
 
-    if id != std::ptr::null_mut() {
-        Ok(id)
-    } else {
+    if id.is_null() {
         Err(MenuError::Create(String::from(text)))
+    } else {
+        Ok(id)
     }
 }
 

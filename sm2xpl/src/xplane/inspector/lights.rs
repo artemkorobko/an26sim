@@ -16,7 +16,7 @@ pub struct LightsBlock {
 
 impl LightsBlock {
     pub fn new(parent: XPWidgetID, rect: &Rect<i32>) -> ApiResult<(Self, Rect<i32>)> {
-        let beacon = create_label!("Beacon:", parent, &rect);
+        let beacon = create_label!("Beacon:", parent, rect);
         let rect = rect.to_next_line();
         let landing = create_label!("Landing:", parent, &rect);
         let rect = rect.to_next_line();

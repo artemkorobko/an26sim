@@ -51,7 +51,7 @@ fn create_widget(
         )
     };
 
-    if id == std::ptr::null_mut() {
+    if id.is_null() {
         Err(WidgetError::Widget(String::from(text)))
     } else {
         Ok(id)

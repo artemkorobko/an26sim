@@ -64,7 +64,7 @@ pub fn create(menu: &mut Box<PluginMenu>) -> ApiResult<()> {
     const MENU_TEXT: &str = "SM2M";
     let plugins_menu = api::find_plugins_menu()?;
     let root_index = api::append_menu_item(plugins_menu, MENU_TEXT)?;
-    let root_menu = api::create_menu(plugins_menu, root_index, &MENU_TEXT, &mut *menu)?;
+    let root_menu = api::create_menu(plugins_menu, root_index, MENU_TEXT, &*menu)?;
     let item = api::append_checked_item(root_menu, "X-Plane physics", MenuItem::Physics)?;
     menu.items.insert(MenuItem::Physics, item);
     let item = api::append_unchecked_item(root_menu, "Inspector window", MenuItem::Inspector)?;

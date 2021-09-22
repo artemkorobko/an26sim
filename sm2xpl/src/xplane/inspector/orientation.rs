@@ -19,7 +19,7 @@ pub struct OrientationBlock {
 
 impl OrientationBlock {
     pub fn new(parent: XPWidgetID, rect: &Rect<i32>) -> ApiResult<(Self, Rect<i32>)> {
-        let heading = create_label!("Heading:", parent, &rect);
+        let heading = create_label!("Heading:", parent, rect);
         let rect = rect.to_next_line();
         let pitch = create_label!("Pitch:", parent, &rect);
         let rect = rect.to_next_line();

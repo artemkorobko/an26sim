@@ -18,7 +18,7 @@ pub struct GeneralBlock {
 
 impl GeneralBlock {
     pub fn new(parent: XPWidgetID, rect: &Rect<i32>) -> ApiResult<(Self, Rect<i32>)> {
-        let fps = create_label!("FPS:", parent, &rect);
+        let fps = create_label!("FPS:", parent, rect);
         let rect = rect.to_next_line();
         let physics = create_label!("Physics:", parent, &rect);
         let block = Self { fps, physics };

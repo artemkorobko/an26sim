@@ -1,3 +1,4 @@
+pub mod command;
 pub mod dataref;
 pub mod debouncer;
 pub mod input_params;

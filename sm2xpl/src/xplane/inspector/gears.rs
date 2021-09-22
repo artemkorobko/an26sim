@@ -19,7 +19,7 @@ pub struct GearsBlock {
 
 impl GearsBlock {
     pub fn new(parent: XPWidgetID, rect: &Rect<i32>) -> ApiResult<(Self, Rect<i32>)> {
-        let front = create_label!("Gear front:", parent, &rect);
+        let front = create_label!("Gear front:", parent, rect);
         let rect = rect.to_next_line();
         let left = create_label!("Gear left:", parent, &rect);
         let rect = rect.to_next_line();

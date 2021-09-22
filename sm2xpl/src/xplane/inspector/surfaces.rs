@@ -20,7 +20,7 @@ pub struct SurfacesBlock {
 
 impl SurfacesBlock {
     pub fn new(parent: XPWidgetID, rect: &Rect<i32>) -> ApiResult<(Self, Rect<i32>)> {
-        let ailerons = create_label!("Ailerons:", parent, &rect);
+        let ailerons = create_label!("Ailerons:", parent, rect);
         let rect = rect.to_next_line();
         let elevator = create_label!("Elevator:", parent, &rect);
         let rect = rect.to_next_line();

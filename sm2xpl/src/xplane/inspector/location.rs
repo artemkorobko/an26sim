@@ -17,7 +17,7 @@ pub struct LocationBlock {
 
 impl LocationBlock {
     pub fn new(parent: XPWidgetID, rect: &Rect<i32>) -> ApiResult<(Self, Rect<i32>)> {
-        let latitude = create_label!("Latitude:", parent, &rect);
+        let latitude = create_label!("Latitude:", parent, rect);
         let rect = rect.to_next_line();
         let longitude = create_label!("Longitude:", parent, &rect);
         let rect = rect.to_next_line();
