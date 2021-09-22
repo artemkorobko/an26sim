@@ -1,5 +1,5 @@
 pub mod dataref;
-pub mod debouncers;
+pub mod debouncer;
 pub mod input_params;
 pub mod inspector;
 pub mod interpolator;

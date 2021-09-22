@@ -6,5 +6,6 @@ mod angular;
 mod boolean;
 mod generic;
 mod linear;
+mod transparent;
 
 const MAX_BOUNCE_TIME: Duration = Duration::from_secs(3);

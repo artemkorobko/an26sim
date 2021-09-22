@@ -88,7 +88,7 @@ where
 mod test {
     use float_eq::assert_float_eq;
 
-    use crate::xplane::debouncers::MAX_BOUNCE_TIME;
+    use crate::xplane::debouncer::MAX_BOUNCE_TIME;
 
     use super::*;
 

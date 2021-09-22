@@ -45,19 +45,19 @@ impl USBParamGenerator {
         self
     }
 
-    pub fn with_const<T: 'static + Parameter>(mut self, generator: ConstGenerator<T>) -> Self {
+    pub fn with_const<T: 'static + Parameter>(self, generator: ConstGenerator<T>) -> Self {
         self.with_boxed_generator(Box::new(generator))
     }
 
     pub fn with_sequential<T: 'static + Parameter + Copy>(
-        mut self,
+        self,
         generator: SequentialGenerator<T>,
     ) -> Self {
         self.with_boxed_generator(Box::new(generator))
     }
 
     pub fn with_bounced<T: 'static + Parameter + Copy>(
-        mut self,
+        self,
         generator: BouncedGenerator<T>,
     ) -> Self {
         self.with_boxed_generator(Box::new(generator))

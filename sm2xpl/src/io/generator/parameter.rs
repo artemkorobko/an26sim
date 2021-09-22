@@ -1,4 +1,3 @@
-use bytes::BufMut;
 use rand::Rng;
 
 use std::{io, mem};

@@ -5,7 +5,10 @@ use xplm::flight_loop::{FlightLoopCallback, LoopState};
 use crate::{
     common::{delta::DeltaTimeSupplier, pipeline::Pipeline},
     io::{
-        generator::{helper::ToGenerator, usb::USBParamGenerator},
+        generator::{
+            helper::{ToBounced, ToGenerator},
+            usb::USBParamGenerator,
+        },
         metrics::IOMetrics,
     },
     plugin_event::PluginEvent,
@@ -13,10 +16,10 @@ use crate::{
         dataref::{
             collection::DataRefs, supplier::XPlaneOutputSupplier, updater::XPlaneDataRefUpdater,
         },
-        debouncers::input::XPlaneParamDebouncer,
+        debouncer::input::XPlaneParamDebouncer,
         input_params::XPlaneInputParams,
         inspector::{updater::XPlaneInspectorUpdater, window::InspectorWindow},
-        interpolator::XPlaneParamInterpolator,
+        interpolator::input::XPlaneParamInterpolator,
         mapper::{input::SM2MXPlaneInputMapper, output::XPlaneSM2MOutputMapper, transcoder},
         menu::{instance::PluginMenu, item::MenuItem},
     },
@@ -105,7 +108,14 @@ impl Controller {
         let generator = USBParamGenerator::from(self.delta_supplier.clone())
             .with_const(transcoder::latitude::encode(params.latitude).to_const_generator())
             .with_const(transcoder::longitude::encode(params.longitude).to_const_generator())
-            .with_const(transcoder::altitude::encode(params.altitude).to_const_generator())
+            .with_bounced(
+                transcoder::altitude::encode(params.altitude)
+                    .to_sequential_generator()
+                    .deferred(Duration::from_millis(100))
+                    .with_step(1)
+                    .to_bounced_generator()
+                    .every(100),
+            )
             .with_const(transcoder::heading::encode(params.heading).to_const_generator())
             .with_const(transcoder::pitch::encode(params.pitch).to_const_generator())
             .with_const(transcoder::roll::encode(params.roll).to_const_generator())

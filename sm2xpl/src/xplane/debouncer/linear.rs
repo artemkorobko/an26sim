@@ -33,7 +33,7 @@ where
     }
 
     fn is_bouncing(&self, target: T) -> bool {
-        target.abs_sub(self.value) >= self.barrier
+        (target - self.value).abs() >= self.barrier
     }
 
     fn can_integrate(&self) -> bool {
