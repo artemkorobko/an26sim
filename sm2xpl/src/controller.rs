@@ -3,27 +3,27 @@ use std::{cell::RefCell, rc::Rc, sync::mpsc::Receiver, time::Duration};
 use xplm::flight_loop::{FlightLoopCallback, LoopState};
 
 use crate::{
-    common::chain::{Chain, Mapper},
-    io::{delta::DeltaTimeSupplier, generator::usb::USBParamGenerator, metrics::IOMetrics},
+    common::{delta::DeltaTimeSupplier, pipeline::Pipeline},
+    io::{
+        generator::{
+            helper::{ToBounced, ToGenerator},
+            usb::USBParamGenerator,
+        },
+        metrics::IOMetrics,
+    },
     plugin_event::PluginEvent,
     xplane::{
-        dataref::collection::DataRefs,
-        input_params::XPlaneInputParams,
-        input_params_consumer::{XPlaneDataRefUpdater, XPlaneInspectorUpdater},
-        input_params_debouncer::XPlaneParamDebouncer,
-        input_params_interpolator::XPlaneParamInterpolator,
-        inspector::window::InspectorWindow,
-        mapper::{
-            input::{SM2MXPlaneInputMapper, XPlaneSM2MInputMapper},
-            output::XPlaneSM2MOutputMapper,
+        dataref::{
+            collection::DataRefs, supplier::XPlaneOutputSupplier, updater::XPlaneDataRefUpdater,
         },
+        debouncer::input::XPlaneParamDebouncer,
+        input_params::XPlaneInputParams,
+        inspector::{updater::XPlaneInspectorUpdater, window::InspectorWindow},
+        interpolator::input::XPlaneParamInterpolator,
+        mapper::{input::SM2MXPlaneInputMapper, output::XPlaneSM2MOutputMapper, transcoder},
         menu::{instance::PluginMenu, item::MenuItem},
-        output_params_supplier::XPlaneOutputSupplier,
     },
 };
-
-type InputChain = Chain<XPlaneInputParams>;
-type OutputChain = Chain<Vec<u16>>;
 
 pub struct Controller {
     menu: Box<PluginMenu>,
@@ -31,8 +31,8 @@ pub struct Controller {
     inspector: Rc<RefCell<InspectorWindow>>,
     rx: Receiver<PluginEvent>,
     delta_supplier: Rc<RefCell<DeltaTimeSupplier>>,
-    input_chain: InputChain,
-    output_chain: OutputChain,
+    input_pipeline: Pipeline<XPlaneInputParams>,
+    output_pipeline: Pipeline<Vec<u8>>,
     input_metrics: Rc<RefCell<IOMetrics>>,
     output_metrics: Rc<RefCell<IOMetrics>>,
 }
@@ -50,7 +50,7 @@ impl Controller {
         let output_metrics = Rc::new(RefCell::new(IOMetrics::default()));
         let delta_supplier = Rc::new(RefCell::new(DeltaTimeSupplier::default()));
 
-        let input_chain = build_default_input_chain(
+        let input_pipeline = build_default_input_pipeline(
             datarefs.clone(),
             inspector.clone(),
             delta_supplier.clone(),
@@ -64,8 +64,8 @@ impl Controller {
             inspector,
             rx,
             delta_supplier,
-            input_chain,
-            output_chain: build_default_output_chain(datarefs),
+            input_pipeline,
+            output_pipeline: build_default_output_pipeline(datarefs),
             input_metrics,
             output_metrics,
         }
@@ -85,7 +85,7 @@ impl Controller {
     }
 
     fn start_test(&mut self) {
-        self.input_chain = self.build_generator_input_chain();
+        self.input_pipeline = self.build_generator_pipeline();
         self.menu.uncheck_item(MenuItem::Physics);
         self.menu.check_item(MenuItem::Inspector);
         self.datarefs.borrow_mut().general.disable_physics();
@@ -93,7 +93,7 @@ impl Controller {
     }
 
     fn stop_test(&mut self) {
-        self.input_chain = build_default_input_chain(
+        self.input_pipeline = build_default_input_pipeline(
             self.datarefs.clone(),
             self.inspector.clone(),
             self.delta_supplier.clone(),
@@ -102,16 +102,48 @@ impl Controller {
         );
     }
 
-    fn build_generator_input_chain(&self) -> InputChain {
-        let input_params = self.datarefs.borrow().as_input();
-        let params = XPlaneSM2MInputMapper::default().map(input_params);
-        let mut generator = USBParamGenerator::dynamic(self.delta_supplier.clone());
-        generator.update_params(&params);
-        Chain::supply(generator)
+    fn build_generator_pipeline(&self) -> Pipeline<XPlaneInputParams> {
+        let datarefs = self.datarefs.borrow();
+        let params = XPlaneInputParams::from(datarefs);
+        let generator = USBParamGenerator::from(self.delta_supplier.clone())
+            .with_const(transcoder::latitude::encode(params.latitude).to_const_generator())
+            .with_const(transcoder::longitude::encode(params.longitude).to_const_generator())
+            .with_bounced(
+                transcoder::altitude::encode(params.altitude)
+                    .to_sequential_generator()
+                    .deferred(Duration::from_millis(100))
+                    .with_step(1)
+                    .to_bounced_generator()
+                    .every(100),
+            )
+            .with_const(transcoder::heading::encode(params.heading).to_const_generator())
+            .with_const(transcoder::pitch::encode(params.pitch).to_const_generator())
+            .with_const(transcoder::roll::encode(params.roll).to_const_generator())
+            .with_const(transcoder::ailerons::encode(params.ailerons).to_const_generator())
+            .with_const(transcoder::elevator::encode(params.elevator).to_const_generator())
+            .with_const(transcoder::rudder::encode(params.rudder).to_const_generator())
+            .with_const(transcoder::flaps::encode(params.flaps).to_const_generator())
+            .with_const(transcoder::engine::encode(params.engine_left).to_const_generator())
+            .with_const(transcoder::engine::encode(params.engine_right).to_const_generator())
+            .with_const(transcoder::gear::encode(params.gear_front).to_const_generator())
+            .with_const(transcoder::gear::encode(params.gear_left).to_const_generator())
+            .with_const(transcoder::gear::encode(params.gear_right).to_const_generator())
+            .with_const(
+                transcoder::light::encode(
+                    params.light_landing,
+                    params.light_navigation,
+                    params.light_landing,
+                )
+                .to_const_generator(),
+            )
+            .with_const(transcoder::reset::encode(params.reset).to_const_generator())
+            .delay(Duration::from_millis(20));
+
+        Pipeline::supply(generator)
             .map(SM2MXPlaneInputMapper::default())
             .map(XPlaneParamDebouncer::new())
             .map(XPlaneParamInterpolator::new(
-                input_params,
+                params,
                 self.delta_supplier.clone(),
             ))
             .consume(XPlaneDataRefUpdater::new(self.datarefs.clone()))
@@ -126,28 +158,24 @@ impl Controller {
 
     fn execute(&mut self, delta: Duration) {
         self.delta_supplier.borrow_mut().update(delta);
-        self.input_chain.execute();
-        self.output_chain.execute();
+        self.input_pipeline.execute();
+        self.output_pipeline.execute();
     }
 }
 
-fn build_default_input_chain(
+fn build_default_input_pipeline(
     datarefs: Rc<RefCell<DataRefs>>,
     inspector: Rc<RefCell<InspectorWindow>>,
     delta_supplier: Rc<RefCell<DeltaTimeSupplier>>,
     input_metrics: Rc<RefCell<IOMetrics>>,
     output_metrics: Rc<RefCell<IOMetrics>>,
-) -> InputChain {
-    let input_params = datarefs.borrow().as_input();
-
-    Chain::supply(|| None)
+) -> Pipeline<XPlaneInputParams> {
+    let params = XPlaneInputParams::from(datarefs.borrow());
+    Pipeline::supply(|| None)
         .map(SM2MXPlaneInputMapper::default())
-        .map(XPlaneParamInterpolator::new(
-            input_params,
-            delta_supplier.clone(),
-        ))
+        .map(XPlaneParamInterpolator::new(params, delta_supplier.clone()))
         .consume(XPlaneInspectorUpdater::new(
-            datarefs.clone(),
+            datarefs,
             inspector.clone(),
             input_metrics.clone(),
             output_metrics.clone(),
@@ -155,8 +183,8 @@ fn build_default_input_chain(
         ))
 }
 
-fn build_default_output_chain(datarefs: Rc<RefCell<DataRefs>>) -> OutputChain {
-    Chain::supply(XPlaneOutputSupplier::new(datarefs.clone())).map(XPlaneSM2MOutputMapper)
+fn build_default_output_pipeline(datarefs: Rc<RefCell<DataRefs>>) -> Pipeline<Vec<u8>> {
+    Pipeline::supply(XPlaneOutputSupplier::new(datarefs.clone())).map(XPlaneSM2MOutputMapper)
 }
 
 impl FlightLoopCallback for Controller {

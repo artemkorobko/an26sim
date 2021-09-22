@@ -1,4 +1,5 @@
 pub mod error;
+pub mod updater;
 pub mod window;
 
 mod api;

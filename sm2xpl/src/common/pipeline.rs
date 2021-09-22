@@ -37,11 +37,11 @@ where
     }
 }
 
-pub struct Chain<T> {
+pub struct Pipeline<T> {
     supplier: Box<dyn Supplier<T>>,
 }
 
-impl<T: 'static> Chain<T> {
+impl<T: 'static> Pipeline<T> {
     pub fn supply<S>(supplier: S) -> Self
     where
         S: Supplier<T> + 'static,
@@ -51,11 +51,11 @@ impl<T: 'static> Chain<T> {
         }
     }
 
-    pub fn map<M, O: 'static>(mut self, mut mapper: M) -> Chain<O>
+    pub fn map<M, O: 'static>(mut self, mut mapper: M) -> Pipeline<O>
     where
         M: Mapper<T, O> + 'static,
     {
-        Chain {
+        Pipeline {
             supplier: Box::new(move || mapper.map(self.supplier.supply())),
         }
     }
@@ -79,17 +79,17 @@ impl<T: 'static> Chain<T> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     #[test]
-    fn should_invoke_all_chain_stages() {
+    fn invoke_all_pipeline_steps() {
         const EXPECTED_RESULT: i32 = 20;
-        let mut chain = Chain::supply(|| 10i32)
+        let mut pipeline = Pipeline::supply(|| 10)
             .map(|value| value + 10)
             .consume(|value: &_| assert_eq!(*value, EXPECTED_RESULT));
 
-        let result = chain.execute();
+        let result = pipeline.execute();
 
         assert_eq!(result, EXPECTED_RESULT);
     }

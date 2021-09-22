@@ -1,8 +1,11 @@
 use std::time::Duration;
 
-pub mod angular;
-pub mod boolean;
-pub mod generic;
-pub mod linear;
+pub mod input;
+
+mod angular;
+mod boolean;
+mod generic;
+mod linear;
+mod transparent;
 
 const MAX_INTEGRATION_TIME: Duration = Duration::from_secs(3);

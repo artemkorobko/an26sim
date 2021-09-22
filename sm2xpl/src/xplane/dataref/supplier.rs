@@ -1,8 +1,8 @@
 use std::{cell::RefCell, rc::Rc};
 
-use crate::common::chain::Supplier;
+use crate::{common::pipeline::Supplier, xplane::output_params::XPlaneOutputParams};
 
-use super::{dataref::collection::DataRefs, output_params::XPlaneOutputParams};
+use super::collection::DataRefs;
 
 pub struct XPlaneOutputSupplier {
     datarefs: Rc<RefCell<DataRefs>>,
@@ -16,6 +16,6 @@ impl XPlaneOutputSupplier {
 
 impl Supplier<XPlaneOutputParams> for XPlaneOutputSupplier {
     fn supply(&mut self) -> XPlaneOutputParams {
-        self.datarefs.borrow().as_output()
+        XPlaneOutputParams::from(self.datarefs.borrow())
     }
 }

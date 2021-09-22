@@ -13,7 +13,6 @@ use crate::{
     PLUGIN_NAME,
 };
 
-const CABIN_ALTITUDE: f32 = 1.83;
 const WINDOW_WIDTH: i32 = 400;
 const WINDOW_HEIGHT: i32 = 300;
 
@@ -30,7 +29,7 @@ impl Plugin for SM2MPlugin {
         let mut menu = Box::new(instance::PluginMenu::new(tx.clone()));
         instance::create(&mut menu)?;
         let inspector = InspectorWindow::new(tx.clone(), WINDOW_WIDTH, WINDOW_HEIGHT, PLUGIN_NAME)?;
-        let data_refs = DataRefs::new(CABIN_ALTITUDE)?;
+        let data_refs = DataRefs::new()?;
         let controller = Controller::new(menu, inspector, data_refs, rx);
         let mut flight_loop = FlightLoop::new(controller);
         flight_loop.schedule_immediate();

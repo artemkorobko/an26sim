@@ -1,12 +1,16 @@
 use xplm::data::borrowed::{DataRef, FindError};
 use xplm::data::{ArrayRead, ArrayReadWrite, ReadWrite};
 
-use crate::xplane::input_params::Gears;
-
 const FRONT_IDX: usize = 0;
 const LEFT_IDX: usize = 1;
 const RIGHT_IDX: usize = 2;
 const DEFAULT: f32 = 0.0;
+
+pub struct GearsState {
+    pub front: f32,
+    pub left: f32,
+    pub right: f32,
+}
 
 pub struct GearsDataRef {
     // Landing gear deployment [0.0..1.0]
@@ -20,20 +24,19 @@ impl GearsDataRef {
         })
     }
 
-    pub fn get(&self) -> Gears {
+    pub fn get(&self) -> GearsState {
         let values = self.acf_gear_deploy.as_vec();
-        Gears {
-            front: *values.get(FRONT_IDX).unwrap_or(&DEFAULT),
-            left: *values.get(LEFT_IDX).unwrap_or(&DEFAULT),
-            right: *values.get(RIGHT_IDX).unwrap_or(&DEFAULT),
-        }
+        let front = *values.get(FRONT_IDX).unwrap_or(&DEFAULT);
+        let left = *values.get(LEFT_IDX).unwrap_or(&DEFAULT);
+        let right = *values.get(RIGHT_IDX).unwrap_or(&DEFAULT);
+        GearsState { front, left, right }
     }
 
-    pub fn set(&mut self, gears: &Gears) {
+    pub fn set(&mut self, front: f32, left: f32, right: f32) {
         let mut values = self.acf_gear_deploy.as_vec();
-        values.get_mut(FRONT_IDX).map(|value| *value = gears.front);
-        values.get_mut(LEFT_IDX).map(|value| *value = gears.left);
-        values.get_mut(RIGHT_IDX).map(|value| *value = gears.right);
+        values.get_mut(FRONT_IDX).map(|value| *value = front);
+        values.get_mut(LEFT_IDX).map(|value| *value = left);
+        values.get_mut(RIGHT_IDX).map(|value| *value = right);
         self.acf_gear_deploy.set(&values);
     }
 }

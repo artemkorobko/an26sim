@@ -2,8 +2,8 @@ use xplm::geometry::Rect;
 use xplm_sys::XPWidgetID;
 
 use crate::{
-    label,
-    xplane::{input_params::Surfaces, inspector::rect_ext::RectExt},
+    create_label,
+    xplane::{dataref::variables::surfaces::SurfacesDataRef, inspector::rect_ext::RectExt},
 };
 
 use super::{
@@ -20,32 +20,31 @@ pub struct SurfacesBlock {
 
 impl SurfacesBlock {
     pub fn new(parent: XPWidgetID, rect: &Rect<i32>) -> ApiResult<(Self, Rect<i32>)> {
-        let ailerons = label!("Ailerons:", parent, &rect);
+        let ailerons = create_label!("Ailerons:", parent, &rect);
         let rect = rect.to_next_line();
-        let elevator = label!("Elevator:", parent, &rect);
+        let elevator = create_label!("Elevator:", parent, &rect);
         let rect = rect.to_next_line();
-        let rudder = label!("Rudder:", parent, &rect);
+        let rudder = create_label!("Rudder:", parent, &rect);
         let rect = rect.to_next_line();
-        let flaps = label!("Flaps:", parent, &rect);
-        Ok((
-            Self {
-                ailerons,
-                elevator,
-                rudder,
-                flaps,
-            },
-            rect,
-        ))
+        let flaps = create_label!("Flaps:", parent, &rect);
+        let block = Self {
+            ailerons,
+            elevator,
+            rudder,
+            flaps,
+        };
+        Ok((block, rect))
     }
 
-    pub fn update(&self, surfaces: &Surfaces) -> ApiResult<()> {
-        let percent = format_percent(surfaces.ailerons, -1.0, 1.0);
+    pub fn update(&self, surfaces: &SurfacesDataRef) -> ApiResult<()> {
+        let percent = format_percent(surfaces.ailerons(), -1.0, 1.0);
         update_widget(self.ailerons, &percent)?;
-        let percent = format_percent(surfaces.elevator, -1.0, 1.0);
+        let percent = format_percent(surfaces.elevator(), -1.0, 1.0);
         update_widget(self.elevator, &percent)?;
-        let percent = format_percent(surfaces.rudder, -1.0, 1.0);
+        let percent = format_percent(surfaces.rudder(), -1.0, 1.0);
         update_widget(self.rudder, &percent)?;
-        let percent = format_percent(surfaces.flaps, 0.0, 1.0);
-        update_widget(self.flaps, &percent)
+        let percent = format_percent(surfaces.flaps(), 0.0, 1.0);
+        update_widget(self.flaps, &percent)?;
+        Ok(())
     }
 }

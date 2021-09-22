@@ -38,37 +38,37 @@ mod test {
     const F64_PRECISION: f64 = F32_PRECISION as f64;
 
     #[test]
-    fn should_get_f32_percent_from_value() {
+    fn get_f32_percent_from_value() {
         let percent = Percent::percent_from_value(&0.0f32, -50.0f32, 50.0f32);
         assert_float_eq!(percent, 50.00, abs <= F32_PRECISION);
     }
 
     #[test]
-    fn should_get_f64_percent_from_value() {
+    fn get_f64_percent_from_value() {
         let percent = Percent::percent_from_value(&0.0f64, -50.0f64, 50.0f64);
         assert_float_eq!(percent, 50.00, abs <= F64_PRECISION);
     }
 
     #[test]
-    fn should_get_f32_value_from_percent() {
+    fn get_f32_value_from_percent() {
         let value = Percent::value_from_percent(&50.0f32, -50.0f32, 50.0f32);
         assert_float_eq!(value, 0.0, abs <= F32_PRECISION);
     }
 
     #[test]
-    fn should_get_f64_value_from_percent() {
+    fn get_f64_value_from_percent() {
         let value = Percent::value_from_percent(&50.0f64, -50.0f64, 50.0f64);
         assert_float_eq!(value, 0.0, abs <= F64_PRECISION);
     }
 
     #[test]
-    fn should_scale_f32() {
+    fn scale_f32() {
         let value = Percent::scale(&25.0f32, 0.0f32, 50.0f32, -100.0f32, -50.0f32);
         assert_float_eq!(value, -75.0, abs <= F32_PRECISION);
     }
 
     #[test]
-    fn should_scale_f64() {
+    fn scale_f64() {
         let value = Percent::scale(&25.0f64, 0.0f64, 50.0f64, -100.0f64, -50.0f64);
         assert_float_eq!(value, -75.0, abs <= F64_PRECISION);
     }

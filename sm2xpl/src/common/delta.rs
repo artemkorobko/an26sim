@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::common::chain::Supplier;
+use crate::common::pipeline::Supplier;
 
 #[derive(Default)]
 pub struct DeltaTimeSupplier {
@@ -20,15 +20,15 @@ impl Supplier<Duration> for DeltaTimeSupplier {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     #[test]
-    fn should_supply_delta_time() {
+    fn supply_updated_delta_time() {
+        let duration = Duration::from_secs(1);
         let mut supplier = DeltaTimeSupplier::default();
         assert_eq!(supplier.supply(), Duration::ZERO);
 
-        let duration = Duration::from_secs(1);
         supplier.update(duration);
 
         assert_eq!(supplier.supply(), duration);

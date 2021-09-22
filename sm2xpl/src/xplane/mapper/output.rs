@@ -1,10 +1,10 @@
-use crate::{common::chain::Mapper, xplane::output_params::XPlaneOutputParams};
+use crate::{common::pipeline::Mapper, xplane::output_params::XPlaneOutputParams};
 
 #[derive(Default)]
 pub struct XPlaneSM2MOutputMapper;
 
-impl Mapper<XPlaneOutputParams, Vec<u16>> for XPlaneSM2MOutputMapper {
-    fn map(&mut self, input: XPlaneOutputParams) -> Vec<u16> {
-        vec![input.terrain_distance.trunc() as u16]
+impl Mapper<XPlaneOutputParams, Vec<u8>> for XPlaneSM2MOutputMapper {
+    fn map(&mut self, input: XPlaneOutputParams) -> Vec<u8> {
+        (input.agl.round() as u16).to_be_bytes().to_vec()
     }
 }
