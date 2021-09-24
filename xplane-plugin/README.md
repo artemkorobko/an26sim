@@ -1,4 +1,4 @@
-# SM2XPL
+# X-Plane PLugin
 This is the plugin for the X-Plane 11 which manages X-Plane aircraft properties received from the An26 simulator (SM2M based computing units). The job of this plugin is to debounce, integrate and interpolate parameters read from a USB CDC decoder.
 
 # High level design

@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "sm2m-decoder",
+    "xplane-plugin",
+]

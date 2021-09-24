@@ -1,6 +1,6 @@
 [package]
-name = "sm2"
-version = "0.1.0"
+name = "xplane-plugin"
+version = "1.0.0"
 edition = "2018"
 
 [dependencies]
@@ -17,5 +17,4 @@ xplm-sys = "0.4.0"
 float_eq = "0.6.1"
 
 [lib]
-name = "sm2"
 crate-type = ["dylib"]

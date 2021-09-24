@@ -151,25 +151,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "sm2"
-version = "0.1.0"
-dependencies = [
- "bytes",
- "chrono",
- "float_eq",
- "num-derive",
- "num-traits",
- "rand",
- "thiserror",
- "xplm",
- "xplm-sys",
-]
+name = "sm2m-decoder"
+version = "1.0.0"
 
 [[package]]
 name = "syn"
-version = "1.0.76"
+version = "1.0.77"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6f107db402c2c2055242dbf4d2af0e69197202e9faacbef9571bbe47f5a1b84"
+checksum = "5239bc68e0fef57495900cfea4e8dc75596d9a319d7e16b1e0a440d24e6fe0a0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -240,6 +229,21 @@ name = "winapi-x86_64-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
+
+[[package]]
+name = "xplane-plugin"
+version = "1.0.0"
+dependencies = [
+ "bytes",
+ "chrono",
+ "float_eq",
+ "num-derive",
+ "num-traits",
+ "rand",
+ "thiserror",
+ "xplm",
+ "xplm-sys",
+]
 
 [[package]]
 name = "xplm"
