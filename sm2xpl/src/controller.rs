@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc, sync::mpsc::Receiver, time::Duration};
 use xplm::flight_loop::{FlightLoopCallback, LoopState};
 
 use crate::{
-    common::{delta::DeltaTimeSupplier, pipeline::Pipeline},
+    shared::{delta::DeltaTimeSupplier, pipeline::Pipeline},
     io::{
         generator::{
             helper::{ToBounced, ToGenerator},

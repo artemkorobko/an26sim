@@ -1,4 +1,4 @@
-mod common;
+mod shared;
 mod controller;
 mod io;
 mod plugin;

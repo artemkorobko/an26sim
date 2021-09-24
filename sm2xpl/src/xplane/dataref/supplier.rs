@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use crate::{common::pipeline::Supplier, xplane::output_params::XPlaneOutputParams};
+use crate::{shared::pipeline::Supplier, xplane::output_params::XPlaneOutputParams};
 
 use super::collection::DataRefs;
 

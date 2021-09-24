@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::common::pipeline::Supplier;
+use crate::shared::pipeline::Supplier;
 
 #[derive(Default)]
 pub struct DeltaTimeSupplier {

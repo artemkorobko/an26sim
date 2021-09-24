@@ -1,4 +1,4 @@
-use crate::{common::pipeline::Mapper, xplane::input_params::XPlaneInputParams};
+use crate::{shared::pipeline::Mapper, xplane::input_params::XPlaneInputParams};
 
 #[derive(Default)]
 pub struct SM2MXPlaneInputMapper;

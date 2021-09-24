@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use crate::{
-    common::{
+    shared::{
         delta::DeltaTimeSupplier,
         pipeline::{Mapper, Supplier},
     },

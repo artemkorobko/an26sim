@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{common::pipeline::Mapper, xplane::input_params::XPlaneInputParams};
+use crate::{shared::pipeline::Mapper, xplane::input_params::XPlaneInputParams};
 
 use super::{
     angular::AngularDebouncer, boolean::BooleanDebouncer, generic::Debouncer,

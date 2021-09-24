@@ -44,9 +44,9 @@ impl Plugin for SM2MPlugin {
 
     fn info(&self) -> PluginInfo {
         PluginInfo {
-            name: PLUGIN_NAME.to_string(),
-            signature: "an26.sm2m".to_string(),
-            description: "An26 simulator SM2M communication module".to_string(),
+            name: PLUGIN_NAME.to_owned(),
+            signature: "an26.sm2m".to_owned(),
+            description: "An26 simulator SM2M communication module".to_owned(),
         }
     }
 }

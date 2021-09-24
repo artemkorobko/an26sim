@@ -1,4 +1,4 @@
-use crate::common::percent::Percent;
+use crate::shared::percent::Percent;
 
 #[macro_export]
 macro_rules! create_label {

@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use crate::{common::pipeline::Consumer, xplane::input_params::XPlaneInputParams};
+use crate::{shared::pipeline::Consumer, xplane::input_params::XPlaneInputParams};
 
 use super::collection::DataRefs;
 

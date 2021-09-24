@@ -7,7 +7,7 @@ use std::{
 
 use bytes::BufMut;
 
-use crate::common::{
+use crate::shared::{
     delta::DeltaTimeSupplier,
     pipeline::Supplier,
     timer::{DeltaCounter, Elapsed},

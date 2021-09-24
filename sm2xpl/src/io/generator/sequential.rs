@@ -1,6 +1,6 @@
 use std::{io, time::Duration};
 
-use crate::common::timer::{DeltaCounter, Elapsed};
+use crate::shared::timer::{DeltaCounter, Elapsed};
 
 use super::{generator::Generator, parameter::Parameter};
 

@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
 use crate::{
-    common::{
+    shared::{
         delta::DeltaTimeSupplier,
         pipeline::{Consumer, Supplier},
         timer::{DeltaCounter, Elapsed},

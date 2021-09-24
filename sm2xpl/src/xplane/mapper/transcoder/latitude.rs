@@ -1,4 +1,4 @@
-use crate::common::percent::Percent;
+use crate::shared::percent::Percent;
 
 pub fn decode(value: u32) -> f64 {
     (value as f64).scale(0.0, u32::MAX as f64, 0.0, 90.0)
