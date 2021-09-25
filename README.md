@@ -1,5 +1,5 @@
 # Antonov 26 Simulator
-This repository contains software that implements Visualization system for Antonov An-26 simulator.
+This repository contains software for Antonov An-26 simulator visualization system.
 
 ![An-26 Simulator](doc/sim.jpg "An-26 Simulator")
 
