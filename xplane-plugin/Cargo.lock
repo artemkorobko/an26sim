@@ -151,10 +151,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sm2m-decoder"
-version = "1.0.0"
-
-[[package]]
 name = "syn"
 version = "1.0.77"
 source = "registry+https://github.com/rust-lang/crates.io-index"

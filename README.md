@@ -5,7 +5,31 @@ This repository contains software that implements Visualization system for Anton
 
 # Prerequisities
 ## Rust
-To install Rust toolchain follow the instructions on https://rustup.rs
+- Install Rust toolchain by follow the instructions on https://rustup.rs
+- Install the `rust-std` component `thumbv7m-none-eabi` to cross-compile for ARM Cortex-M3 using the following command:
+```bash
+rustup target add thumbv7m-none-eabi
+```
+- Install `cargo-binutils`
+```bash
+cargo install cargo-binutils
+```
+- Install `llvm-tools-preview`
+```bash
+rustup component add llvm-tools-preview
+```
+- Install GCC extension
+```bash
+brew install armmbed/formulae/arm-none-eabi-gcc
+# ensure extension has been installed
+arm-none-eabi-gcc -v
+```
+- Install OpenOCD
+```bash
+brew install openocd
+```
+
+You can find more information about the embedded toolchains here https://docs.rust-embedded.org/book/intro/index.html.
 
 ## Visual Studio Code
 To install vscode follow the instructions on https://code.visualstudio.com
@@ -21,5 +45,6 @@ Optional plugins: [Test Explorer UI](https://marketplace.visualstudio.com/items?
 [Tabnine AI Code Completion](https://marketplace.visualstudio.com/items?itemName=TabNine.tabnine-vscode),
 [Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker).
 
-# Software
-[SM2XPL](sm2xpl) - X-Plane plugin
+# Workspace crates
+[SM2M Decoder](sm2m-decoder) - SM2M signal decoder firmware  
+[X-Plane plugin](xplane-plugin) - X-Plane 11 visualization plugin
