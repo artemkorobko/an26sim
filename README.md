@@ -45,6 +45,6 @@ Optional plugins: [Test Explorer UI](https://marketplace.visualstudio.com/items?
 [Tabnine AI Code Completion](https://marketplace.visualstudio.com/items?itemName=TabNine.tabnine-vscode),
 [Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker).
 
-# Workspace crates
+# Project crates
 [SM2M Decoder](sm2m-decoder) - SM2M signal decoder firmware  
 [X-Plane plugin](xplane-plugin) - X-Plane 11 visualization plugin
