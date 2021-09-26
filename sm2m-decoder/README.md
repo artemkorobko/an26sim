@@ -4,6 +4,9 @@ The firmware is developed for STM32F103 microcontroller.
 It is build using the RTIC - a concurrency framework for building real-time systems.
 You can find more information in the official RTIC book https://rtic.rs/0.5/book/en/.
 
+# High level design
+![High level design](design.svg)
+
 # ST-Link V2 USB debugger to Blue Pill board connection
 | Blue Pill | ST-Link V2 |
 | --- | --- |
