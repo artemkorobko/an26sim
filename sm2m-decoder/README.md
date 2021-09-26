@@ -33,6 +33,20 @@ This method may not work on Chinesse made boards.
 Many bluepill boards are know to have a USB pull up resistor with a value far off. It requires to replace the USB DP pull up with the right value. If it's not the case try uploading the firmware using ST-Link V2._
 
 # Upload firmware to MCU using ST-Link V2
+To upload compiled ELF binary wuth ST-Link V2 we use `openocd` utility. The ELF itself contains flash start address so we can simply invoke the following command:
+```bash
+openocd -f ./openocd.cfg -c "init" -c "reset init" -c "flash write_image erase ./target/thumbv7m-none-eabi/release/sm2m-decoder" -c "shutdown"
+```
+
+Alternatively you can create the following shell file:
+```bash
+cargo build --release && \
+openocd -f ./openocd.cfg -c "init" -c "reset init" -c "flash write_image erase ./target/thumbv7m-none-eabi/release/sm2m-decoder" -c "shutdown"
+```
+
+_In case openocd fails to upload the firmware first time try pressing a `Reset` button on the board before openocd start and release it after you see console message `Info : Listening on port 3333 for gdb connections`. Next time you run openocd it should flash the MCU without errors._
+
+_After flashing complete press `Reset` button on the board._
 
 ## ST-Link V2 USB debugger to Blue Pill board connection
 The other of pins represents the same order of pins on the Blue Pill board facing MCU and pins down.
@@ -43,3 +57,6 @@ The other of pins represents the same order of pins on the Blue Pill board facin
 | **IO** brown | **SWDIO** pin 4 |
 | **CLK** white | **SWDCLK** pin 2 |
 | **GND** black | **GND** pin 6 |
+
+# STM32F103C8T6 Blue Pill pin layout
+![STM32F103C8T6 Blue Pill pin layout](STM32F103C8T6-Blue-Pill-pin-layout.gif)
