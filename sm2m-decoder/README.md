@@ -35,9 +35,11 @@ Many bluepill boards are know to have a USB pull up resistor with a value far of
 # Upload firmware to MCU using ST-Link V2
 
 ## ST-Link V2 USB debugger to Blue Pill board connection
+The other of pins represents the same order of pins on the Blue Pill board facing MCU and pins down.
+
 | Blue Pill | ST-Link V2 |
 | --- | --- |
 | **V3** red | **3.3V** pin 8 |
-| **IO** orange | **SWDIO** pin 4 |
-| **CLK** brown | **SWDCLK** pin 2 |
+| **IO** brown | **SWDIO** pin 4 |
+| **CLK** white | **SWDCLK** pin 2 |
 | **GND** black | **GND** pin 6 |
