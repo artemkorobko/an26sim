@@ -14,6 +14,13 @@ cargo build --release
 cargo objcopy --release -- -O binary ./target/decoder.bin
 ```
 
+After uploading the built firmware to the MCU we can check that OS has been detected our device by running the command:
+```bash
+ioreg -p IOUSB -w0 | sed 's/[^o]*o //; s/@.*$//' | grep -v '^Root.*'
+```
+
+We should see `STM32 Virtual ComPort` device in the list.
+
 # Upload firmware to MCU using DFU
 To upload compiled firmware you need to make sure that BOOT0 jumper connects BOOT0 to the 3v3 and BOO1 jumper connects BOOT1 to GND.
 Then connect the board to USB and run the following command:
