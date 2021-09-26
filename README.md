@@ -24,9 +24,9 @@ brew install armmbed/formulae/arm-none-eabi-gcc
 # ensure extension has been installed
 arm-none-eabi-gcc -v
 ```
-- Install OpenOCD
+- Install open on-chip debugger OpenOCD and `dfu-util` which is the host side firmware download/upload utility
 ```bash
-brew install openocd
+brew install openocd dfu-util
 ```
 
 You can find more information about the embedded toolchains here https://docs.rust-embedded.org/book/intro/index.html.

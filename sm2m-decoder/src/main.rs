@@ -32,9 +32,9 @@ const APP: () = {
     #[task(resources = [led], schedule = [blink])]
     fn blink(cx: blink::Context) {
         cx.resources.led.toggle().unwrap();
-        cx.schedule
-            .blink(cx.scheduled + cyccnt::Duration::from_cycles(72.mhz().0))
-            .unwrap();
+        // cx.schedule
+        //     .blink(cx.scheduled + cyccnt::Duration::from_cycles(72.mhz().0 / 2))
+        //     .unwrap();
     }
 
     extern "C" {
