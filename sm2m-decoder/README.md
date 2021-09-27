@@ -22,6 +22,20 @@ ioreg -p IOUSB -w0 | sed 's/[^o]*o //; s/@.*$//' | grep -v '^Root.*'
 We should see `STM32 Virtual ComPort` device in the list.
 
 # Upload firmware to MCU using DFU
+Before uploading firmware to MCU ensure the size of the firmware can fit in MCU RAM.
+```bash
+cargo size --release
+```
+
+The output will look like this:
+```
+    Finished release [optimized] target(s) in 0.04s
+   text    data     bss     dec     hex filename
+  11952       0     776   12728    31b8 sm2m-decoder
+```
+
+**Dec** column represents the total size of the firmware in bytes.
+
 To upload compiled firmware you need to make sure that BOOT0 jumper connects BOOT0 to the 3v3 and BOO1 jumper connects BOOT1 to GND.
 Then connect the board to USB and run the following command:
 ```bash
