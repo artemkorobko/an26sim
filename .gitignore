@@ -1,6 +1,7 @@
 .DS_Store
 **/target
 **/Resources
-**/node_modules
+sm2m-transcoder/node_modules
+sm2m-transcoder/build
 **/run.sh
 **/flash.sh
