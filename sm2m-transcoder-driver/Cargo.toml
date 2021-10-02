@@ -1,0 +1,12 @@
+[package]
+name = "sm2m-transcoder-driver"
+version = "1.0.0"
+edition = "2018"
+
+[dependencies]
+rusb = "0.9.0"
+thiserror = "1.0.29"
+log = "0.4.14"
+
+[dev-dependencies]
+simple_logger = "1.13.0"
