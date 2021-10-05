@@ -3,6 +3,9 @@ sm2m-decoder/target
 sm2m-decoder/flash.sh
 sm2m-transcoder/node_modules
 sm2m-transcoder/build
+sm2m-transcoder/native/target
+sm2m-transcoder/native/Cargo.lock
+sm2m-transcoder/native/index.node
 sm2m-transcoder-driver/target
 sm2m-transcoder-driver/Cargo.lock
 xplane-plugin/Resources

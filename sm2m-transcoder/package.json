@@ -1,9 +1,6 @@
 {
-  "name": "my-app",
-  "version": "0.2.0",
-  "author": "Your Name",
-  "description": "React-TypeScript-Electron sample with Create React App and Electron Builder",
-  "homepage": ".",
+  "name": "sm2m-transcoder",
+  "version": "1.0.0",
   "main": "build/electron/main.js",
   "private": true,
   "dependencies": {
@@ -29,6 +26,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "native:build": "cargo-cp-artifact -a cdylib native native/index.node -- cargo build --manifest-path native/Cargo.toml --message-format=json-render-diagnostics",
+    "native:build-release": "npm run native:build -- --release",
     "postinstall": "electron-builder install-app-deps",
     "electron:dev": "concurrently \"cross-env BROWSER=none npm start\" \"wait-on http://localhost:3000 && tsc -p electron -w\" \"wait-on http://localhost:3000 && tsc -p electron && electron .\"",
     "electron:build": "yarn build && tsc -p electron && electron-builder",
@@ -62,6 +61,7 @@
     ]
   },
   "devDependencies": {
+    "cargo-cp-artifact": "^0.1.5",
     "concurrently": "^6.2.1",
     "cross-env": "^7.0.3",
     "electron": "^14.0.0",

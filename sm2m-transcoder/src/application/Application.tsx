@@ -16,6 +16,7 @@ class Application extends React.Component {
             <Encoder />
           </Grid.Column>
         </Grid.Row>
+        123
       </Grid>
     );
   }

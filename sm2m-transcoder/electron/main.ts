@@ -9,20 +9,15 @@ function createWindow() {
     minWidth: 800,
     minHeight: 600,
     webPreferences: {
-      // contextIsolation: false,
       preload: path.join(__dirname, 'preload.js')
     }
   })
 
   if (app.isPackaged) {
-    // 'build/index.html'
     win.loadURL(`file://${__dirname}/../index.html`);
   } else {
     win.loadURL('http://localhost:3000/index.html');
-
     win.webContents.openDevTools();
-
-    // Hot Reloading on 'node_modules/.bin/electronPath'
     require('electron-reload')(__dirname, {
       electron: path.join(__dirname,
         '..',
@@ -37,7 +32,6 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  // DevTools
   installExtension(REACT_DEVELOPER_TOOLS)
     .then((name) => console.log(`Added Extension:  ${name}`))
     .catch((err) => console.log('An error occurred: ', err));
