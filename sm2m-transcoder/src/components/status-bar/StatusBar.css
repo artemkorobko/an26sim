@@ -1,0 +1,10 @@
+.status-bar {
+  width: 100%;
+  position: fixed;
+  bottom: 0;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #8d8d8d;
+  -webkit-app-region: drag;
+}

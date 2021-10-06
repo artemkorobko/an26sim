@@ -1,0 +1,5 @@
+.title-bar {
+  -webkit-app-region: drag;
+  margin-top: .5rem;
+  font-weight: bold;
+}

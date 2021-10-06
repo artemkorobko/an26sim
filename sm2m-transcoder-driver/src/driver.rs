@@ -14,6 +14,21 @@ impl Driver {
         Ok(Self { context })
     }
 
+    pub fn version() -> String {
+        env!("CARGO_PKG_VERSION").to_owned()
+    }
+
+    pub fn libusb_version() -> String {
+        let version = rusb::version();
+        format!(
+            "{}.{}.{}.{}",
+            version.major(),
+            version.minor(),
+            version.micro(),
+            version.nano()
+        )
+    }
+
     pub fn find_encoder(
         &mut self,
         timeout: time::Duration,

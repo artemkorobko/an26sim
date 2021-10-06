@@ -16,6 +16,18 @@ mod tests {
     use crate::driver::Driver;
 
     #[test]
+    fn return_package_version() {
+        let version = Driver::version();
+        assert_eq!(version, "1.0.0");
+    }
+
+    #[test]
+    fn return_libusb_version() {
+        let version = Driver::libusb_version();
+        assert_eq!(version, "1.0.24.11584");
+    }
+
+    #[test]
     fn find_decoder() {
         SimpleLogger::new().init().unwrap();
 
