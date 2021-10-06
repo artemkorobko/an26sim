@@ -32,7 +32,7 @@
     "native:build-release": "npm run native:build -- --release",
     "postinstall": "electron-builder install-app-deps",
     "electron:dev": "concurrently \"cross-env BROWSER=none npm start\" \"wait-on http://localhost:3000 && tsc -p electron -w\" \"wait-on http://localhost:3000 && tsc -p electron && electron .\"",
-    "electron:build": "yarn build && tsc -p electron && electron-builder",
+    "electron:build": "npm build && tsc -p electron && electron-builder",
     "eject": "react-scripts eject"
   },
   "build": {

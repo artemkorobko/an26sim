@@ -3,6 +3,7 @@ sm2m-decoder/target
 sm2m-decoder/flash.sh
 sm2m-transcoder/node_modules
 sm2m-transcoder/build
+sm2m-transcoder/dist
 sm2m-transcoder/native/target
 sm2m-transcoder/native/Cargo.lock
 sm2m-transcoder/native/index.node
