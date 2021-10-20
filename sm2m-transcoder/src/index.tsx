@@ -1,20 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
-import 'semantic-ui-css/semantic.min.css';
-import { Application } from './application/Application';
 import reportWebVitals from './reportWebVitals';
+import { Application } from './application/Application';
 
-declare global {
-  interface NativeApi {
-    version(): string;
-    libusb_version(): string;
-  }
-
-  interface Window {
-    native?: NativeApi;
-  }
-}
+import 'semantic-ui-css/semantic.min.css';
+import './index.css';
 
 ReactDOM.render(
   <React.StrictMode>

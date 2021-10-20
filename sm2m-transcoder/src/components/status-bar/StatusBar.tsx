@@ -1,15 +1,19 @@
 import React from "react";
+import { Version } from "../../domain";
 
 import "./StatusBar.css";
 
-export const StatusBar: React.FC = () => {
-  const driverVersion = () => window.native?.version()
-  const libusbVersion = () => window.native?.libusb_version()
+const DEFAULT_VERSION = "unknown";
 
+interface StatusBarProps {
+  version?: Version,
+}
+
+export const StatusBar: React.FC<StatusBarProps> = (props: StatusBarProps) => {
   return (
     <div className="status-bar">
-      <div>Driver version: {driverVersion()}</div>
-      <div>Libusb version: {libusbVersion()}</div>
+      <div>Driver version: {props.version?.driver || DEFAULT_VERSION}</div>
+      <div>Libusb version: {props.version?.libusb || DEFAULT_VERSION}</div>
     </div>
   );
 }
