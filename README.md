@@ -19,12 +19,22 @@ cargo install cargo-binutils
 ```bash
 rustup component add llvm-tools-preview
 ```
-- Install ARM GCC extension
+
+## VS Build Tools for Windows only
+Download the Visual Studio 2019 Build tools from the Microsoft website: https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16
+
+During installation in the `Workloads` tab select `Desktop development with C++`. Select the following items on the `Installation details` page:
+- MSVC v142 - VS 2019 C++ ...
+- Windows 10 SDK ...
+- C++ CMake tools for Windows
+
+## ARM gcc extension for MacOS only
 ```bash
 brew install armmbed/formulae/arm-none-eabi-gcc
 # ensure extension has been installed
 arm-none-eabi-gcc -v
 ```
+
 - Install open on-chip debugger OpenOCD and `dfu-util` which is the host side firmware download/upload utility
 ```bash
 brew install openocd dfu-util
@@ -35,12 +45,15 @@ You can find more information about the embedded toolchains here https://docs.ru
 ## NodeJS
 NodeJS is used to develope and build SM2M Transcoder.
 
-- Install Node version manager by following the instructions on https://github.com/nvm-sh/nvm.
+- Install Node version manager by following the instructions on  
+   - *[`MacOS, Linux`]* https://github.com/nvm-sh/nvm  
+   - *[`Windows`]* https://github.com/coreybutler/nvm-windows
 
 - Install the latest NodeJS using NVM
 ```bash
-nvm install --lts
+nvm install lts
 ```
+**In Windows** run terminal as administrator and manually select installed version by running `nvm use <version>`. You can find installed versions using the following command `nvm ls`.
 
 ## Visual Studio Code
 Visual Studio Code is the most preferred IDE for development and being used to in developing of all packages. Follow the instructions on https://code.visualstudio.com
