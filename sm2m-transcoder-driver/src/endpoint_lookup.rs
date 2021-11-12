@@ -74,7 +74,6 @@ impl EndpointLookup {
         handle: &mut rusb::DeviceHandle<T>,
     ) -> Result<(), DriverError> {
         if self.is_kernel_driver_active(handle)? {
-            log::debug!("Detach kernel driver");
             self.detach_kernel_driver(handle)?;
             self.driver_detached = true;
         }
@@ -90,7 +89,6 @@ impl EndpointLookup {
         handle: &mut rusb::DeviceHandle<T>,
     ) -> Result<(), DriverError> {
         if self.driver_detached {
-            log::debug!("Attach kernel driver");
             self.attach_kernel_driver(handle)?;
         }
 

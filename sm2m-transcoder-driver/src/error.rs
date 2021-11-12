@@ -6,8 +6,14 @@ pub enum DriverError {
     Init(#[source] rusb::Error),
     #[error("can't read USB device list, reason: {0}")]
     DeviceList(#[source] rusb::Error),
+    #[error("can't read device descriptor, reason: {0}")]
+    ReadDeviceDescriptor(#[source] rusb::Error),
+    #[error("can't open device {1}:{2}, reason: {0}")]
+    OpenDevice(#[source] rusb::Error, u16, u16),
     #[error("can't read serial number for device {1}:{2}, reason: {0}")]
     SerialNumber(#[source] rusb::Error, u16, u16),
+    #[error("can't read languages for device {1}:{2}, reason: {0}")]
+    ReadLanguages(#[source] rusb::Error, u16, u16),
     #[error("USB device {0}:{1} does not have readable endpoint")]
     NoReadableEndpoint(u16, u16),
     #[error("USB device {0}:{1} does not have writeable endpoint")]

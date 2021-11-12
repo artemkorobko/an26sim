@@ -33,7 +33,6 @@ impl Driver {
         &mut self,
         timeout: time::Duration,
     ) -> Result<Option<DefaultDevice>, DriverError> {
-        log::debug!("Search for supported encoder");
         let device_lookup = device_lookup_helper::find_encoder(&mut self.context, timeout)?;
         match device_lookup {
             Some(device_lookup) => Ok(Some(Self::create_device(device_lookup)?)),
@@ -45,7 +44,6 @@ impl Driver {
         &mut self,
         timeout: time::Duration,
     ) -> Result<Option<DefaultDevice>, DriverError> {
-        log::debug!("Search for supported decoder");
         let device_lookup = device_lookup_helper::find_decoder(&mut self.context, timeout)?;
         match device_lookup {
             Some(device_lookup) => Ok(Some(Self::create_device(device_lookup)?)),
@@ -56,9 +54,7 @@ impl Driver {
     fn create_device(
         mut device_lookup: DeviceLookup<rusb::Context>,
     ) -> Result<DefaultDevice, DriverError> {
-        log::debug!("Search for available readable endpoints");
         let readable_endpoint = device_lookup.find_readable_endpoint()?;
-        log::debug!("Search for available writeable endpoints");
         let writeable_endpoint = device_lookup.find_writeable_endpoint()?;
         crate::device::Device::from(device_lookup, readable_endpoint, writeable_endpoint)
     }

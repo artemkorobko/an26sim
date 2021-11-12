@@ -10,14 +10,12 @@ pub struct Device<T: rusb::UsbContext> {
 
 impl<T: rusb::UsbContext> Drop for Device<T> {
     fn drop(&mut self) {
-        log::debug!("Close readable endpoint");
-        if let Err(error) = self.readable_endpoint.close(self.device.handle()) {
-            log::error!("{:?}", error);
-        }
-        log::debug!("Close writeable endpoint");
-        if let Err(error) = self.writeable_endpoint.close(self.device.handle()) {
-            log::error!("{:?}", error);
-        }
+        self.readable_endpoint
+            .close(&mut self.device.handle)
+            .expect("Unable to close read endpoint");
+        self.writeable_endpoint
+            .close(&mut self.device.handle)
+            .expect("Unable to close write endpoint");
     }
 }
 
@@ -27,10 +25,8 @@ impl<T: rusb::UsbContext> Device<T> {
         mut readable_endpoint: EndpointLookup,
         mut writeable_endpoint: EndpointLookup,
     ) -> Result<Self, DriverError> {
-        log::debug!("Open readable endpoint");
-        readable_endpoint.open(&mut device.handle())?;
-        log::debug!("Open writeable endpoint");
-        writeable_endpoint.open(&mut device.handle())?;
+        readable_endpoint.open(&mut device.handle)?;
+        writeable_endpoint.open(&mut device.handle)?;
 
         Ok(Self {
             device,
@@ -40,37 +36,64 @@ impl<T: rusb::UsbContext> Device<T> {
     }
 
     pub fn check(&mut self, timeout: time::Duration) -> Result<bool, DriverError> {
-        log::debug!("Send PING");
         self.write_ping(timeout)?;
-        log::debug!("Read PONG");
-        let result = self.read_pong(timeout)?;
-        if result != 2 {
-            log::debug!("Invalid PONG response: {}", result);
-            Ok(false)
-        } else {
-            log::debug!("Send PING");
+        if self.read_pong(timeout)? {
             self.write_ping(timeout)?;
-            log::debug!("Read PONG");
-            let result = self.read_pong(timeout)? == 2;
-            Ok(result)
-        }
-    }
-
-    fn write_ping(&mut self, timeout: time::Duration) -> Result<usize, DriverError> {
-        let buf = [1];
-        self.writeable_endpoint
-            .write(self.device.handle(), &buf, timeout)
-    }
-
-    fn read_pong(&mut self, timeout: time::Duration) -> Result<u8, DriverError> {
-        let mut buf = [0u8; 10];
-        let size = self
-            .readable_endpoint
-            .read(self.device.handle(), &mut buf, timeout)?;
-        if size == 1 {
-            Ok(buf[0])
+            self.read_pong(timeout)
         } else {
-            Ok(0)
+            Ok(false)
         }
+    }
+
+    pub fn write(&mut self, buf: &[u8], timeout: time::Duration) -> Result<usize, DriverError> {
+        self.writeable_endpoint
+            .write(&self.device.handle, buf, timeout)
+    }
+
+    pub fn write_all(
+        &mut self,
+        buf: &[u8],
+        timeout: time::Duration,
+        mut retries: usize,
+    ) -> Result<bool, DriverError> {
+        let bytes_total = buf.len();
+        let mut bytes_written = self.write(buf, timeout)?;
+        while bytes_written < bytes_total && retries > 0 {
+            bytes_written = self.write(&buf[bytes_written..], timeout)?;
+            retries -= 1;
+        }
+        Ok(retries > 0)
+    }
+
+    pub fn read(&mut self, buf: &mut [u8], timeout: time::Duration) -> Result<usize, DriverError> {
+        self.readable_endpoint
+            .read(&self.device.handle, buf, timeout)
+    }
+
+    pub fn read_all(
+        &mut self,
+        buf: &mut [u8],
+        timeout: time::Duration,
+        mut retries: usize,
+    ) -> Result<bool, DriverError> {
+        let bytes_total = buf.len();
+        let mut bytes_read = self.read(buf, timeout)?;
+        while bytes_read < bytes_total && retries > 0 {
+            bytes_read = self.read(&mut buf[bytes_read..], timeout)?;
+            retries -= 1;
+        }
+        Ok(retries > 0)
+    }
+
+    fn write_ping(&mut self, timeout: time::Duration) -> Result<bool, DriverError> {
+        let buf = [1];
+        let bytes_written = self.write(&buf, timeout)?;
+        Ok(bytes_written == buf.len())
+    }
+
+    fn read_pong(&mut self, timeout: time::Duration) -> Result<bool, DriverError> {
+        let mut buf = [0u8; 1];
+        let bytes_read = self.read(&mut buf, timeout)?;
+        Ok(bytes_read == 1 && buf[0] == 2)
     }
 }
