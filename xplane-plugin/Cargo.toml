@@ -10,8 +10,9 @@ num-derive = "0.3.3"
 rand = "0.8.4"
 thiserror = "1.0.26"
 bytes = "1.1.0"
-xplm = { git = "https://github.com/samcrow/rust-xplm.git" }
 xplm-sys = "0.4.0"
+xplm = { git = "https://github.com/samcrow/rust-xplm.git" }
+sm2m-transcoder-driver = { path = "../sm2m-transcoder-driver" }
 
 [dev-dependencies]
 float_eq = "0.6.1"
