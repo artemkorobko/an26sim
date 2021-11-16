@@ -55,14 +55,14 @@ impl<T: rusb::UsbContext> Device<T> {
         buf: &[u8],
         timeout: time::Duration,
         mut retries: usize,
-    ) -> Result<bool, DriverError> {
+    ) -> Result<usize, DriverError> {
         let bytes_total = buf.len();
         let mut bytes_written = self.write(buf, timeout)?;
         while bytes_written < bytes_total && retries > 0 {
-            bytes_written = self.write(&buf[bytes_written..], timeout)?;
+            bytes_written += self.write(&buf[bytes_written..], timeout)?;
             retries -= 1;
         }
-        Ok(retries > 0)
+        Ok(bytes_written)
     }
 
     pub fn read(&mut self, buf: &mut [u8], timeout: time::Duration) -> Result<usize, DriverError> {
@@ -70,19 +70,23 @@ impl<T: rusb::UsbContext> Device<T> {
             .read(&self.device.handle, buf, timeout)
     }
 
-    pub fn read_all(
+    pub fn read_all(&mut self, buf: &mut [u8]) -> Result<usize, DriverError> {
+        self.try_read_all(buf, time::Duration::MAX, usize::MAX)
+    }
+
+    pub fn try_read_all(
         &mut self,
         buf: &mut [u8],
         timeout: time::Duration,
         mut retries: usize,
-    ) -> Result<bool, DriverError> {
+    ) -> Result<usize, DriverError> {
         let bytes_total = buf.len();
         let mut bytes_read = self.read(buf, timeout)?;
         while bytes_read < bytes_total && retries > 0 {
-            bytes_read = self.read(&mut buf[bytes_read..], timeout)?;
+            bytes_read += self.read(&mut buf[bytes_read..], timeout)?;
             retries -= 1;
         }
-        Ok(retries > 0)
+        Ok(bytes_read)
     }
 
     fn write_ping(&mut self, timeout: time::Duration) -> Result<bool, DriverError> {

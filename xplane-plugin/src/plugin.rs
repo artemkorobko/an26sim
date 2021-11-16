@@ -1,5 +1,6 @@
 use std::sync::mpsc;
 
+use sm2m_transcoder_driver::driver::USBDriver;
 use xplm::{
     flight_loop::FlightLoop,
     plugin::{Plugin, PluginInfo},
@@ -9,6 +10,7 @@ use crate::{
     controller::Controller,
     plugin_error::PluginError,
     plugin_event::PluginEvent,
+    usb,
     xplane::{dataref::collection::DataRefs, inspector::window::InspectorWindow, menu::instance},
     PLUGIN_NAME,
 };
@@ -30,7 +32,9 @@ impl Plugin for SM2MPlugin {
         instance::create(&mut menu)?;
         let inspector = InspectorWindow::new(tx.clone(), WINDOW_WIDTH, WINDOW_HEIGHT, PLUGIN_NAME)?;
         let data_refs = DataRefs::new()?;
-        let controller = Controller::new(menu, inspector, data_refs, rx);
+        let usb_driver = USBDriver::new()?;
+        let usb_thread_handle = usb::thread::start(usb_driver);
+        let controller = Controller::new(menu, inspector, data_refs, usb_thread_handle, rx);
         let mut flight_loop = FlightLoop::new(controller);
         flight_loop.schedule_immediate();
         Ok(Self { flight_loop })

@@ -13,17 +13,17 @@ mod tests {
 
     use simple_logger::SimpleLogger;
 
-    use crate::driver::Driver;
+    use crate::driver::USBDriver;
 
     #[test]
     fn return_package_version() {
-        let version = Driver::version();
+        let version = USBDriver::version();
         assert_eq!(version, "1.0.0");
     }
 
     #[test]
     fn return_libusb_version() {
-        let version = Driver::libusb_version();
+        let version = USBDriver::libusb_version();
         assert_eq!(version, "1.0.24.11584");
     }
 
@@ -31,7 +31,7 @@ mod tests {
     fn find_decoder() {
         SimpleLogger::new().init().unwrap();
 
-        let mut driver = Driver::new().unwrap();
+        let mut driver = USBDriver::new().unwrap();
         let device = driver.find_decoder(time::Duration::from_secs(1)).unwrap();
 
         match device {

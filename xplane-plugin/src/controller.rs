@@ -3,7 +3,6 @@ use std::{cell::RefCell, rc::Rc, sync::mpsc::Receiver, time::Duration};
 use xplm::flight_loop::{FlightLoopCallback, LoopState};
 
 use crate::{
-    shared::{delta::DeltaTimeSupplier, pipeline::Pipeline},
     io::{
         generator::{
             helper::{ToBounced, ToGenerator},
@@ -12,6 +11,8 @@ use crate::{
         metrics::IOMetrics,
     },
     plugin_event::PluginEvent,
+    shared::{delta::DeltaTimeSupplier, pipeline::Pipeline},
+    usb::thread_handle::USBThreadHandle,
     xplane::{
         dataref::{
             collection::DataRefs, supplier::XPlaneOutputSupplier, updater::XPlaneDataRefUpdater,
@@ -29,7 +30,9 @@ pub struct Controller {
     menu: Box<PluginMenu>,
     datarefs: Rc<RefCell<DataRefs>>,
     inspector: Rc<RefCell<InspectorWindow>>,
+    usb_thread_handle: USBThreadHandle,
     rx: Receiver<PluginEvent>,
+
     delta_supplier: Rc<RefCell<DeltaTimeSupplier>>,
     input_pipeline: Pipeline<XPlaneInputParams>,
     output_pipeline: Pipeline<Vec<u8>>,
@@ -42,6 +45,7 @@ impl Controller {
         menu: Box<PluginMenu>,
         inspector: InspectorWindow,
         datarefs: DataRefs,
+        usb_thread_handle: USBThreadHandle,
         rx: Receiver<PluginEvent>,
     ) -> Self {
         let datarefs = Rc::new(RefCell::new(datarefs));
@@ -62,6 +66,7 @@ impl Controller {
             menu,
             datarefs: datarefs.clone(),
             inspector,
+            usb_thread_handle,
             rx,
             delta_supplier,
             input_pipeline,
@@ -72,16 +77,16 @@ impl Controller {
     }
 
     fn handle_events(&mut self) {
-        if let Ok(event) = self.rx.try_recv() {
-            match event {
-                PluginEvent::EnablePhysics => self.datarefs.borrow_mut().general.enable_physics(),
-                PluginEvent::DisablePhysics => self.datarefs.borrow_mut().general.disable_physics(),
-                PluginEvent::ShowDebugWindow => self.inspector.borrow_mut().show(),
-                PluginEvent::HideDebugWindow => self.inspector.borrow_mut().hide(),
-                PluginEvent::StartTest => self.start_test(),
-                PluginEvent::StopTest => self.stop_test(),
-            }
-        }
+        // if let Ok(event) = self.rx.try_recv() {
+        //     match event {
+        //         PluginEvent::EnablePhysics => self.datarefs.borrow_mut().general.enable_physics(),
+        //         PluginEvent::DisablePhysics => self.datarefs.borrow_mut().general.disable_physics(),
+        //         PluginEvent::ShowDebugWindow => self.inspector.borrow_mut().show(),
+        //         PluginEvent::HideDebugWindow => self.inspector.borrow_mut().hide(),
+        //         PluginEvent::StartTest => self.start_test(),
+        //         PluginEvent::StopTest => self.stop_test(),
+        //     }
+        // }
     }
 
     fn start_test(&mut self) {
@@ -157,9 +162,9 @@ impl Controller {
     }
 
     fn execute(&mut self, delta: Duration) {
-        self.delta_supplier.borrow_mut().update(delta);
-        self.input_pipeline.execute();
-        self.output_pipeline.execute();
+        // self.delta_supplier.borrow_mut().update(delta);
+        // self.input_pipeline.execute();
+        // self.output_pipeline.execute();
     }
 }
 

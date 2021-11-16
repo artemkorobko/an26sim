@@ -15,7 +15,7 @@ xplm = { git = "https://github.com/samcrow/rust-xplm.git" }
 sm2m-transcoder-driver = { path = "../sm2m-transcoder-driver" }
 
 [dev-dependencies]
-float_eq = "0.6.1"
+float_eq = "0.7.0"
 
 [lib]
 crate-type = ["dylib"]
