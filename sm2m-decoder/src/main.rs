@@ -67,7 +67,7 @@ const APP: () = {
     }
 
     #[idle()]
-    fn idle(_ctx: idle::Context) -> ! {
+    fn idle(_cx: idle::Context) -> ! {
         loop {
             asm::nop();
         }
@@ -81,26 +81,41 @@ const APP: () = {
             .unwrap();
     }
 
-    #[task(binds = USB_HP_CAN_TX, resources = [usb_device, usb_reader])]
-    fn usb_tx(cx: usb_tx::Context) {
-        handle_usb_command(cx.resources.usb_device, cx.resources.usb_reader);
+    #[task(resources = [usb_device])]
+    fn usb_command(cx: usb_command::Context, command: USBCommand) {
+        match command {
+            USBCommand::Ping => cx
+                .resources
+                .usb_device
+                .write(&[USBCommand::Pong.to_u8()])
+                .ok(),
+            _ => None,
+        };
     }
 
-    #[task(binds = USB_LP_CAN_RX0, resources = [usb_device, usb_reader])]
+    #[task(binds = USB_HP_CAN_TX, spawn = [usb_command], resources = [usb_device, usb_reader])]
+    fn usb_tx(cx: usb_tx::Context) {
+        if let Some(command) = cx
+            .resources
+            .usb_reader
+            .read_command(cx.resources.usb_device)
+        {
+            cx.spawn.usb_command(command).ok();
+        }
+    }
+
+    #[task(binds = USB_LP_CAN_RX0, spawn = [usb_command], resources = [usb_device, usb_reader])]
     fn usb_rx0(cx: usb_rx0::Context) {
-        handle_usb_command(cx.resources.usb_device, cx.resources.usb_reader);
+        if let Some(command) = cx
+            .resources
+            .usb_reader
+            .read_command(cx.resources.usb_device)
+        {
+            cx.spawn.usb_command(command).ok();
+        }
     }
 
     extern "C" {
         fn TAMPER();
     }
 };
-
-fn handle_usb_command(usb_device: &mut CDCDevice, usb_reader: &mut USBReader) {
-    if let Some(command) = usb_reader.read_command(usb_device) {
-        match command {
-            USBCommand::Ping => usb_device.write(&[USBCommand::Pong.to_u8()]).ok(),
-            _ => None,
-        };
-    }
-}

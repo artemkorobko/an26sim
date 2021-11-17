@@ -1,7 +1,7 @@
 use super::{cdc_device::CDCDevice, command::USBCommand};
 
 #[derive(Default)]
-pub struct USBReader {}
+pub struct USBReader;
 
 impl USBReader {
     pub fn read_command(&mut self, device: &mut CDCDevice) -> Option<USBCommand> {

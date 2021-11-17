@@ -1,7 +1,13 @@
 pub enum USBCommand {
     Ping,
     Pong,
-    Unknown,
+    None,
+}
+
+impl Default for USBCommand {
+    fn default() -> Self {
+        Self::None
+    }
 }
 
 impl From<u8> for USBCommand {
@@ -9,7 +15,7 @@ impl From<u8> for USBCommand {
         match value {
             1 => USBCommand::Ping,
             2 => USBCommand::Pong,
-            _ => USBCommand::Unknown,
+            _ => USBCommand::None,
         }
     }
 }
@@ -19,7 +25,7 @@ impl USBCommand {
         match self {
             USBCommand::Ping => 1,
             USBCommand::Pong => 2,
-            USBCommand::Unknown => 255,
+            USBCommand::None => 255,
         }
     }
 }
