@@ -12,7 +12,6 @@ use cdc::{
 use cortex_m::asm;
 use embedded_hal::digital::v2::OutputPin;
 use panic_halt as _;
-// use rtic::cyccnt::U32Ext;
 use stm32f1xx_hal::gpio;
 
 use crate::{
@@ -26,18 +25,15 @@ use crate::{
 #[rtic::app(device = stm32f1xx_hal::pac, peripherals = true, monotonic = rtic::cyccnt::CYCCNT)]
 const APP: () = {
     struct Resources {
-        // timer: u32,
         led: Led,
         usb_device: CdcDevice,
         usb_reader: CdcReader,
         usb_writer: CdcWriter,
     }
 
-    // #[init(schedule = [blink])]
     #[init]
     fn init(cx: init::Context) -> init::LateResources {
         // Setup MCU
-        // setup::core(cx.core);
         let mut peripherals = setup::device(cx.device);
 
         // Configure output LED
@@ -62,12 +58,7 @@ const APP: () = {
         let usb_dm = peripherals.gpioa.pa11;
         let usb_device = CdcDevice::new(peripherals.usb, usb_dm, usb_dp);
 
-        // Start blink task
-        // let timer = peripherals.clocks.sysclk().0 / 2;
-        // cx.schedule.blink(cx.start + timer.cycles()).unwrap();
-
         init::LateResources {
-            // timer,
             led,
             usb_device,
             usb_reader: CdcReader::default(),
@@ -78,18 +69,9 @@ const APP: () = {
     #[idle()]
     fn idle(_cx: idle::Context) -> ! {
         loop {
-            // asm::nop();
             asm::wfi();
         }
     }
-
-    // #[task(resources = [timer, led], schedule = [blink])]
-    // fn blink(cx: blink::Context) {
-    //     cx.resources.led.toggle();
-    //     cx.schedule
-    //         .blink(cx.scheduled + cx.resources.timer.cycles())
-    //         .ok();
-    // }
 
     #[task(resources = [led, usb_device, usb_writer])]
     fn handle_request(cx: handle_request::Context, request: RequestType) {
@@ -102,10 +84,7 @@ const APP: () = {
             }
             Request::LedOn => cx.resources.led.on(),
             Request::LedOff => cx.resources.led.off(),
-            _ => {
-                // cx.resources.led.toggle();
-                // flash LED
-            }
+            _ => {}
         };
 
         cx.resources.led.toggle();

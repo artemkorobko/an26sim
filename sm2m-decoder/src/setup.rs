@@ -1,10 +1,5 @@
 use stm32f1xx_hal::{device, gpio, prelude::*, rcc};
 
-// pub fn core(mut core: rtic::Peripherals) -> rtic::Peripherals {
-//     core.DWT.enable_cycle_counter();
-//     core
-// }
-
 pub struct Peripherals {
     pub usb: device::USB,
     pub gpioa: gpio::gpioa::Parts,
