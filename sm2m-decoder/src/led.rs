@@ -14,4 +14,12 @@ impl Led {
     pub fn toggle(&mut self) {
         self.pin.toggle().ok();
     }
+
+    pub fn on(&mut self) {
+        self.pin.set_high().ok();
+    }
+
+    pub fn off(&mut self) {
+        self.pin.set_low().ok();
+    }
 }

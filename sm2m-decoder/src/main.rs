@@ -100,6 +100,8 @@ const APP: () = {
                 writer.cache(response);
                 writer.write(cx.resources.usb_device).ok();
             }
+            Request::LedOn => cx.resources.led.on(),
+            Request::LedOff => cx.resources.led.off(),
             _ => {
                 // cx.resources.led.toggle();
                 // flash LED

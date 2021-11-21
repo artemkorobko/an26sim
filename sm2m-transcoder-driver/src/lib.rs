@@ -66,6 +66,30 @@ mod tests {
         assert!(received);
     }
 
+    #[test]
+    fn turn_led_on() {
+        init_logger();
+        let device = find_decoder_device().expect("No decoder device found");
+        log::info!("Resetting device...");
+        device.reset().expect("Unable to reset device");
+        let mut device = find_decoder_device().expect("No decoder device found");
+        log::info!("Sending led on request...");
+        let sent = device.led_on().expect("Error sending led on request");
+        assert!(sent);
+    }
+
+    #[test]
+    fn turn_led_off() {
+        init_logger();
+        let device = find_decoder_device().expect("No decoder device found");
+        log::info!("Resetting device...");
+        device.reset().expect("Unable to reset device");
+        let mut device = find_decoder_device().expect("No decoder device found");
+        log::info!("Sending led off request...");
+        let sent = device.led_off().expect("Error sending led off request");
+        assert!(sent);
+    }
+
     fn init_logger() {
         SimpleLogger::new()
             .init()
