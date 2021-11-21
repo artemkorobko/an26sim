@@ -1,6 +1,7 @@
 pub mod device;
 pub mod driver;
 pub mod error;
+pub mod protocol;
 
 mod device_lookup;
 mod device_lookup_helper;
@@ -13,7 +14,12 @@ mod tests {
 
     use simple_logger::SimpleLogger;
 
-    use crate::driver::USBDriver;
+    use crate::{
+        driver::{USBDevice, USBDriver},
+        protocol::SM2MDevice,
+    };
+
+    const IO_TIMEOUT: time::Duration = time::Duration::from_secs(1);
 
     #[test]
     fn return_package_version() {
@@ -29,18 +35,49 @@ mod tests {
 
     #[test]
     fn find_decoder() {
-        SimpleLogger::new().init().unwrap();
-
-        let mut driver = USBDriver::new().unwrap();
-        let device = driver.find_decoder(time::Duration::from_secs(1)).unwrap();
-
-        match device {
-            Some(mut device) => {
-                log::info!("Checking device");
-                assert!(device.check(time::Duration::from_secs(1)).unwrap());
-                log::info!("Device is ready");
-            }
-            None => log::error!("Decoder not found, plug-in the decoder and try test again"),
+        init_logger();
+        if find_decoder_device().is_some() {
+            log::info!("Decoder found");
+        } else {
+            log::error!("Decoder not found, plug-in the decoder and try test again");
         }
+    }
+
+    #[test]
+    fn reset_device() {
+        let device = find_decoder_device().expect("No decoder device found");
+        log::info!("Resetting device...");
+        device.reset().expect("Unable to reset device");
+    }
+
+    #[test]
+    fn test_ping() {
+        init_logger();
+        let device = find_decoder_device().expect("No decoder device found");
+        log::info!("Resetting device...");
+        device.reset().expect("Unable to reset device");
+        let mut device = find_decoder_device().expect("No decoder device found");
+        log::info!("Sending ping request...");
+        let payload = device.write_ping(1).expect("Error sending ping request");
+        log::info!("Waiting for pong response...");
+        let received = device
+            .read_pong(payload)
+            .expect("Error waiting for pong response");
+        assert!(received);
+    }
+
+    fn init_logger() {
+        SimpleLogger::new()
+            .init()
+            .expect("Error initializing test logger");
+    }
+
+    fn find_decoder_device() -> Option<USBDevice> {
+        log::info!("Initializing driver...");
+        let mut driver = USBDriver::new().expect("Error initializing USB driver");
+        log::info!("Searching for decoder...");
+        driver
+            .find_decoder(IO_TIMEOUT)
+            .expect("Error searching for decoder device")
     }
 }

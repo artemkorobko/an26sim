@@ -61,6 +61,8 @@ openocd -f ./openocd.cfg -c "init" -c "reset init" -c "flash write_image erase .
 
 Alternatively you can create the following shell file:
 ```bash
+#!/bin/sh
+
 cargo build --release && \
 openocd -f ./openocd.cfg -c "init" -c "reset init" -c "flash write_image erase ./target/thumbv7m-none-eabi/release/sm2m-decoder" -c "shutdown"
 ```

@@ -1,4 +1,4 @@
-use std::cell::Ref;
+use std::{cell::Ref, convert::TryFrom};
 
 use bytes::Buf;
 

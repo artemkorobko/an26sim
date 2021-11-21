@@ -7,11 +7,11 @@ pub struct Led {
 
 impl Led {
     pub fn new(mut pin: gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>) -> Self {
-        pin.set_low().unwrap();
+        pin.set_low().ok();
         Self { pin }
     }
 
     pub fn toggle(&mut self) {
-        self.pin.toggle().unwrap();
+        self.pin.toggle().ok();
     }
 }

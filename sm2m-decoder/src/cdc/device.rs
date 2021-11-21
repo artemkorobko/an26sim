@@ -6,12 +6,12 @@ use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
 static mut USB_BUS: Option<UsbBusAllocator<usb::UsbBusType>> = None;
 
-pub struct CDCDevice {
+pub struct CdcDevice {
     usb_dev: UsbDevice<'static, usb::UsbBusType>,
     serial: SerialPort<'static, usb::UsbBusType>,
 }
 
-impl CDCDevice {
+impl CdcDevice {
     pub fn new(
         usb: device::USB,
         usb_dm: gpio::gpioa::PA11<gpio::Input<gpio::Floating>>,

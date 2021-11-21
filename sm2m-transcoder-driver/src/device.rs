@@ -35,14 +35,14 @@ impl<T: rusb::UsbContext> Device<T> {
         })
     }
 
-    pub fn check(&mut self, timeout: time::Duration) -> Result<bool, DriverError> {
-        self.write_ping(timeout)?;
-        if self.read_pong(timeout)? {
-            self.write_ping(timeout)?;
-            self.read_pong(timeout)
-        } else {
-            Ok(false)
-        }
+    pub fn reset(mut self) -> Result<(), DriverError> {
+        self.device.handle.reset().map_err(|error| {
+            DriverError::Reset(
+                error,
+                self.device.descriptor.vendor_id(),
+                self.device.descriptor.product_id(),
+            )
+        })
     }
 
     pub fn write(&mut self, buf: &[u8], timeout: time::Duration) -> Result<usize, DriverError> {
@@ -50,7 +50,11 @@ impl<T: rusb::UsbContext> Device<T> {
             .write(&self.device.handle, buf, timeout)
     }
 
-    pub fn write_all(
+    pub fn write_all(&mut self, buf: &[u8]) -> Result<usize, DriverError> {
+        self.try_write_all(buf, time::Duration::MAX, usize::MAX)
+    }
+
+    pub fn try_write_all(
         &mut self,
         buf: &[u8],
         timeout: time::Duration,
@@ -87,17 +91,5 @@ impl<T: rusb::UsbContext> Device<T> {
             retries -= 1;
         }
         Ok(bytes_read)
-    }
-
-    fn write_ping(&mut self, timeout: time::Duration) -> Result<bool, DriverError> {
-        let buf = [1];
-        let bytes_written = self.write(&buf, timeout)?;
-        Ok(bytes_written == buf.len())
-    }
-
-    fn read_pong(&mut self, timeout: time::Duration) -> Result<bool, DriverError> {
-        let mut buf = [0u8; 1];
-        let bytes_read = self.read(&mut buf, timeout)?;
-        Ok(bytes_read == 1 && buf[0] == 2)
     }
 }

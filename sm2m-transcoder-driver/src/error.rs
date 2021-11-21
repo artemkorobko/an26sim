@@ -32,6 +32,8 @@ pub enum DriverError {
     AlternateSetting(#[source] rusb::Error, u8, u8),
     #[error("can't enable interface {1} endpoint for device {2}:{3}, reason: {0}")]
     EnableEndpoint(#[source] rusb::Error, u8, u16, u16),
+    #[error("can't reset device {1}:{2}, reason: {0}")]
+    Reset(#[source] rusb::Error, u16, u16),
     #[error("can't read from USB interface {1}, reason: {0}")]
     Read(#[source] rusb::Error, u8),
     #[error("can't write to USB interface {1}, reason: {0}")]

@@ -77,6 +77,11 @@ impl Controller {
     }
 
     fn handle_events(&mut self) {
+        if let Some(payload) = self.usb_thread_handle.read() {
+            println!("Received data");
+            let input_params = XPlaneInputParams::from(payload.as_ref());
+        }
+
         // if let Ok(event) = self.rx.try_recv() {
         //     match event {
         //         PluginEvent::EnablePhysics => self.datarefs.borrow_mut().general.enable_physics(),

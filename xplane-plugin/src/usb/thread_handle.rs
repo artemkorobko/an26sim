@@ -22,6 +22,14 @@ impl USBThreadHandle {
         }
     }
 
+    pub fn read(&self) -> Option<Vec<u8>> {
+        self.read_rx.try_recv().ok()
+    }
+
+    pub fn write(&self, payload: Vec<u8>) -> bool {
+        self.write_tx.send(payload).is_ok()
+    }
+
     pub fn stop(&mut self) {
         if let Some(handle) = self.handle.take() {
             self.term_tx
