@@ -28,7 +28,7 @@ impl ResponseWriter {
     pub fn write(&mut self, device: &mut CdcDevice, response: Response) -> Result<(), UsbError> {
         self.cache(response);
         while self.pos < self.len {
-            let size = device.write(&mut self.buf[self.pos..self.len])?;
+            let size = device.write(&self.buf[self.pos..self.len])?;
             self.pos += size;
         }
         self.reset();

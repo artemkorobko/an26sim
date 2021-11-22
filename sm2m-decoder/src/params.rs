@@ -1,4 +1,4 @@
-const PARAMS_COUNT: usize = 1;
+// const PARAMS_COUNT: usize = 1;
 
 pub struct SM2MParams {
     // params: [u8; PARAMS_COUNT],
