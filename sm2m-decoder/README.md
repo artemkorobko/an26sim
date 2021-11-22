@@ -8,22 +8,22 @@ You can find more information in the official RTIC book https://rtic.rs/0.5/book
 ![High level design](design.svg)
 
 # Communication protocol
-Each packet consists of 4 bits of an opcode and a payload. The maximum size of USB packet is is 64 bytes.
+Each packet consists of 4 bits opcode and payload. The maximum size of USB packet is is 64 bytes.
 
 ## Ping request
-The ping request has length of 16 bits with opcode `1`, user defined version starting from `0` up to `255` and random payload. Below is the representation of the request in little-endian byte order.
+The ping request has length of 16 bits with opcode `1`, user defined version starting from `0` up to `255` and a random payload. Below is the representation of the request in little-endian byte order:
 |Payload 4 bits|Version 8 bits|Opcode 4 bits|
 | --- | --- | --- |
 |1111|0000 0001|0001|
 
-## Pong request
-The pong response has length of 16 bits with opcode `1`, requested version incremented by 1 and requested payload. Below is the representation of the request in little-endian byte order.
+## Pong response
+The pong response has length of 16 bits with opcode `1`, requested version incremented by 1 and requested payload. Below is the representation of the request in little-endian byte order:
 |Payload 4 bits|Version 8 bits|Opcode 4 bits|
 | --- | --- | --- |
 |1111|0000 0010|0001|
 
-## Led request
-The led request has length of 8 bits with opcode `2` and led state in 5th bit. `1` the led is on, `0` the led if off. This request does not return response. Below is the representation of the request in little-endian byte order.
+## Led test request
+The led test request has length of 8 bits with opcode `2` and led state in 5th bit. If the state bit is set the led will be turned on, otherwise it'll be turned off. This request does not return any response. Below is the representation of the request in little-endian byte order:
 |Flags 4 bits|Opcode 4 bits|
 | --- | --- |
 |0001|0010|
