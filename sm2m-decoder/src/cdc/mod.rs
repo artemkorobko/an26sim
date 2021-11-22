@@ -1,3 +1,3 @@
 pub mod device;
-pub mod read;
-pub mod write;
+pub mod request;
+pub mod response;

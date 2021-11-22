@@ -1,44 +1,51 @@
 use std::time;
 
-use rand::Rng;
-
 use crate::{driver::USBDevice, error::DriverError};
 
-pub trait SM2MDevice {
-    fn write_ping(&mut self, version: u8) -> Result<u32, DriverError>;
-    fn read_pong(&mut self, payload: u32) -> Result<bool, DriverError>;
-    fn led_on(&mut self) -> Result<bool, DriverError>;
-    fn led_off(&mut self) -> Result<bool, DriverError>;
+pub enum Request {
+    Ping(u8, u8),
+    LedOn,
+    LedOff,
 }
 
-const IO_TIMEOUT: time::Duration = time::Duration::from_secs(1);
+#[derive(Debug, PartialEq)]
+pub enum Response {
+    Pong(u8, u8),
+    Unknown,
+}
+
+pub trait SM2MDevice {
+    fn write_request(&mut self, request: Request) -> Result<usize, DriverError>;
+    fn read_response(&mut self) -> Result<Response, DriverError>;
+}
 
 impl SM2MDevice for USBDevice {
-    fn write_ping(&mut self, version: u8) -> Result<u32, DriverError> {
-        let mut request = rand::thread_rng().gen_range(0x10000u32..0xFFFF0000u32);
-        request = (request & 0xffffff00) | 0x1;
-        request = (request & 0xffff00ff) | ((version as u32) << 8);
-        self.write(&request.to_le_bytes(), IO_TIMEOUT)?;
-        Ok(request)
+    fn write_request(&mut self, request: Request) -> Result<usize, DriverError> {
+        match request {
+            Request::Ping(version, payload) => {
+                let mut msg = 0x1u16;
+                msg |= (version as u16) << 4;
+                msg |= (payload as u16) << 12;
+                self.write_all(&msg.to_le_bytes())
+            }
+            Request::LedOn => self.write_all(&18u8.to_le_bytes()),
+            Request::LedOff => self.write_all(&2u8.to_le_bytes()),
+        }
     }
 
-    fn read_pong(&mut self, mut payload: u32) -> Result<bool, DriverError> {
-        let mut response = [0u8; 4];
-        self.read(&mut response, IO_TIMEOUT)?;
-        let version = (payload >> 8) & 0xff;
-        payload = (payload & 0xffff00ff) | (version + 1) << 8;
-        Ok(u32::from_le_bytes(response) == payload)
-    }
-
-    fn led_on(&mut self) -> Result<bool, DriverError> {
-        let request = [2u8, 1u8, 0u8, 0u8];
-        let size = self.write(&request, IO_TIMEOUT)?;
-        Ok(size == request.len())
-    }
-
-    fn led_off(&mut self) -> Result<bool, DriverError> {
-        let request = [2u8, 0u8, 0u8, 0u8];
-        let size = self.write(&request, IO_TIMEOUT)?;
-        Ok(size == request.len())
+    fn read_response(&mut self) -> Result<Response, DriverError> {
+        const READ_TIMEOUT: time::Duration = time::Duration::from_secs(1);
+        let mut buf = [0u8; 64];
+        self.read(&mut buf, READ_TIMEOUT)?;
+        let opcode = buf[0] & 0x0f;
+        let response = match opcode {
+            1 => {
+                let version = buf[1] << 4 | buf[0] >> 4;
+                let payload = buf[1] >> 4 & 0xf;
+                Response::Pong(version, payload)
+            }
+            _ => Response::Unknown,
+        };
+        Ok(response)
     }
 }

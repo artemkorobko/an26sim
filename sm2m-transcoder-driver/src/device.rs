@@ -35,7 +35,7 @@ impl<T: rusb::UsbContext> Device<T> {
         })
     }
 
-    pub fn reset(mut self) -> Result<(), DriverError> {
+    pub fn reset(&mut self) -> Result<(), DriverError> {
         self.device.handle.reset().map_err(|error| {
             DriverError::Reset(
                 error,
@@ -87,6 +87,7 @@ impl<T: rusb::UsbContext> Device<T> {
         let bytes_total = buf.len();
         let mut bytes_read = self.read(buf, timeout)?;
         while bytes_read < bytes_total && retries > 0 {
+            println!("123");
             bytes_read += self.read(&mut buf[bytes_read..], timeout)?;
             retries -= 1;
         }

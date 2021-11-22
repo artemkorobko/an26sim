@@ -12,11 +12,12 @@ mod endpoint_lookup_helper;
 mod tests {
     use std::time;
 
+    use rand::Rng;
     use simple_logger::SimpleLogger;
 
     use crate::{
         driver::{USBDevice, USBDriver},
-        protocol::SM2MDevice,
+        protocol::{Request, Response, SM2MDevice},
     };
 
     const IO_TIMEOUT: time::Duration = time::Duration::from_secs(1);
@@ -45,7 +46,7 @@ mod tests {
 
     #[test]
     fn reset_device() {
-        let device = find_decoder_device().expect("No decoder device found");
+        let mut device = find_decoder_device().expect("No decoder device found");
         log::info!("Resetting device...");
         device.reset().expect("Unable to reset device");
     }
@@ -53,41 +54,53 @@ mod tests {
     #[test]
     fn test_ping() {
         init_logger();
-        let device = find_decoder_device().expect("No decoder device found");
+        let mut device = find_decoder_device().expect("No decoder device found");
         log::info!("Resetting device...");
         device.reset().expect("Unable to reset device");
-        let mut device = find_decoder_device().expect("No decoder device found");
-        log::info!("Sending ping request...");
-        let payload = device.write_ping(1).expect("Error sending ping request");
-        log::info!("Waiting for pong response...");
-        let received = device
-            .read_pong(payload)
-            .expect("Error waiting for pong response");
-        assert!(received);
+        for version in 0u16..256 {
+            let version = version as u8;
+            let payload = rand::thread_rng().gen_range(5..15);
+            log::info!(
+                "Sending ping request {} with payload {}...",
+                version,
+                payload
+            );
+            let size = device
+                .write_request(Request::Ping(version, payload))
+                .expect("Error sending ping request");
+            assert_eq!(size, 2);
+            log::info!("Waiting for pong response...");
+            let response = device
+                .read_response()
+                .expect("Error waiting for pong response");
+            assert_eq!(Response::Pong(version.wrapping_add(1), payload), response);
+        }
     }
 
     #[test]
     fn turn_led_on() {
         init_logger();
-        let device = find_decoder_device().expect("No decoder device found");
+        let mut device = find_decoder_device().expect("No decoder device found");
         log::info!("Resetting device...");
         device.reset().expect("Unable to reset device");
-        let mut device = find_decoder_device().expect("No decoder device found");
         log::info!("Sending led on request...");
-        let sent = device.led_on().expect("Error sending led on request");
-        assert!(sent);
+        let size = device
+            .write_request(Request::LedOn)
+            .expect("Error sending led on request");
+        assert_eq!(size, 1);
     }
 
     #[test]
     fn turn_led_off() {
         init_logger();
-        let device = find_decoder_device().expect("No decoder device found");
+        let mut device = find_decoder_device().expect("No decoder device found");
         log::info!("Resetting device...");
         device.reset().expect("Unable to reset device");
-        let mut device = find_decoder_device().expect("No decoder device found");
         log::info!("Sending led off request...");
-        let sent = device.led_off().expect("Error sending led off request");
-        assert!(sent);
+        let size = device
+            .write_request(Request::LedOff)
+            .expect("Error sending led off request");
+        assert_eq!(size, 1);
     }
 
     fn init_logger() {

@@ -31,6 +31,7 @@ impl CdcDevice {
                 .product("STM32 Virtual ComPort")
                 .serial_number("SM2M-DECODER")
                 .device_class(USB_CLASS_CDC)
+                .max_packet_size_0(64)
                 .build();
             (usb_dev, serial)
         };
@@ -38,12 +39,12 @@ impl CdcDevice {
         Self { usb_dev, serial }
     }
 
+    pub fn poll(&mut self) -> bool {
+        self.usb_dev.poll(&mut [&mut self.serial])
+    }
+
     pub fn read(&mut self, data: &mut [u8]) -> Result<usize, UsbError> {
-        if self.usb_dev.poll(&mut [&mut self.serial]) {
-            self.serial.read(data)
-        } else {
-            Ok(0)
-        }
+        self.serial.read(data)
     }
 
     pub fn write(&mut self, data: &[u8]) -> Result<usize, UsbError> {

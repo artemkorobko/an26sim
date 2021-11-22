@@ -6,8 +6,7 @@ pub struct Led {
 }
 
 impl Led {
-    pub fn new(mut pin: gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>) -> Self {
-        pin.set_low().ok();
+    pub fn new(pin: gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>) -> Self {
         Self { pin }
     }
 
@@ -16,10 +15,10 @@ impl Led {
     }
 
     pub fn on(&mut self) {
-        self.pin.set_high().ok();
+        self.pin.set_low().ok();
     }
 
     pub fn off(&mut self) {
-        self.pin.set_low().ok();
+        self.pin.set_high().ok();
     }
 }
