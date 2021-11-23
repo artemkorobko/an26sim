@@ -11,7 +11,7 @@ You can find more information in the official RTIC book https://rtic.rs/0.5/book
 Each packet consists of 4 bits opcode and payload. The maximum size of USB packet is is 64 bytes.
 
 ## Ping request
-The request has length of 16 bits (2 bytes) with 4 bits of opcode `1`, 4 bits of random payload and 8 bits of user defined version starting from `0` up to `255`. Below is the representation of the request in little-endian byte order with payload `15` and version `1`:
+The request has length of 16 bits (2 bytes) with 4 bits of opcode `1`, 4 bits of random payload and 8 bits of user defined version starting from `0` up to `255`. A host can expect pong response sent from the device. Below is the representation of the request in little-endian byte order with payload `15` and version `1`:
 |Version 8 bits|Payload 4 bits|Opcode 4 bits|
 | --- | --- | --- |
 |0000 0001|1111|0001|
@@ -30,6 +30,18 @@ The request has length of 8 bits (1 byte) with 4 bits of opcode `2` and 1 bit of
 
 ## Set parameter request
 The request has length of 24 bits (3 bytes) with 4 bits of opcode `3`, 4 bits of parameter index starting from `0` up to `12` and 16 bits of parameter value. This request does not return any response. Below is the representation of the request in little-endian byte order which sets parameter at index `0` with value `21845`:
+|Parameter value 16 bit|Index 4 bits|Opcode 4 bits|
+| --- | --- | --- |
+|0101 0101 0101 0101|0000|0011|
+
+## Get parameter request
+The request has length of 8 bits (1 byte) with 4 bits of opcode `4` and 4 bits of parameter index starting from `0` up to `12`. A host can expect parameter response sent from the device. Below is the representation of the request in little-endian byte order which requests parameter at index `0`:
+|Index 4 bits|Opcode 4 bits|
+| --- | --- |
+|0000|0100|
+
+## Parameter response
+The response has length of 24 bits (3 bytes) with 4 bits of opcode `4`, 4 bits of parameter index starting from `0` up to `12` and 16 bits of parameter value. Below is the representation of the response in little-endian byte order with index `0` and value `21845`:
 |Parameter value 16 bit|Index 4 bits|Opcode 4 bits|
 | --- | --- | --- |
 |0101 0101 0101 0101|0000|0011|
