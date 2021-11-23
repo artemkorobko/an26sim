@@ -11,7 +11,6 @@ use embedded_hal::digital::v2::OutputPin;
 use panic_halt as _;
 use stm32f1xx_hal::gpio;
 
-// use cdc::* as cdc;
 use cdc::{
     device::CdcDevice,
     request::{Request, RequestReader},
@@ -26,8 +25,6 @@ const APP: () = {
         led: Led,
         params: SM2MParams,
         usb_device: CdcDevice,
-        usb_reader: RequestReader,
-        usb_writer: ResponseWriter,
     }
 
     #[init]
@@ -61,8 +58,6 @@ const APP: () = {
             led,
             params: Default::default(),
             usb_device,
-            usb_reader: Default::default(),
-            usb_writer: Default::default(),
         }
     }
 
@@ -73,20 +68,27 @@ const APP: () = {
         }
     }
 
-    #[task(capacity = 5, resources = [led, usb_device, usb_writer])]
+    #[task(capacity = 5, resources = [led, params, usb_device])]
     fn handle_request(cx: handle_request::Context, request: Request) {
+        let mut usb_device = cx.resources.usb_device;
         match request {
             Request::Ping(version, payload) => {
                 let response = Response::Pong(version.wrapping_add(1), payload);
-                let mut usb_device = cx.resources.usb_device;
-                let usb_writer = cx.resources.usb_writer;
                 usb_device.lock(|usb_device| {
-                    write_usb_response(usb_device, usb_writer, response);
+                    write_usb_response(usb_device, response);
                 });
             }
             Request::LedOn => cx.resources.led.on(),
             Request::LedOff => cx.resources.led.off(),
-            _ => {}
+            Request::SetParam(index, param) => {
+                cx.resources.params.set(index as usize, param);
+            }
+            Request::GetParam(index) => {
+                if let Some(param) = cx.resources.params.get(index as usize) {
+                    let response = Response::Param(index, param);
+                    usb_device.lock(|usb_device| write_usb_response(usb_device, response))
+                }
+            }
         };
     }
 
@@ -95,10 +97,10 @@ const APP: () = {
         cx.resources.usb_device.poll();
     }
 
-    #[task(priority = 2, binds = USB_LP_CAN_RX0, spawn = [handle_request], resources = [usb_device, usb_reader])]
+    #[task(priority = 2, binds = USB_LP_CAN_RX0, spawn = [handle_request], resources = [usb_device])]
     fn usb_rx0(cx: usb_rx0::Context) {
         if cx.resources.usb_device.poll() {
-            read_usb_request(cx.resources.usb_device, cx.resources.usb_reader)
+            read_usb_request(cx.resources.usb_device)
                 .and_then(|request| cx.spawn.handle_request(request).ok());
         }
     }
@@ -108,10 +110,10 @@ const APP: () = {
     }
 };
 
-fn read_usb_request(device: &mut CdcDevice, reader: &mut RequestReader) -> Option<Request> {
-    reader.read_from(device).unwrap_or(None)
+fn read_usb_request(device: &mut CdcDevice) -> Option<Request> {
+    device.read_request().unwrap_or(None)
 }
 
-fn write_usb_response(device: &mut CdcDevice, writer: &mut ResponseWriter, response: Response) {
-    writer.write(device, response).ok();
+fn write_usb_response(device: &mut CdcDevice, response: Response) {
+    device.write_response(response).ok();
 }

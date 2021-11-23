@@ -11,22 +11,45 @@ You can find more information in the official RTIC book https://rtic.rs/0.5/book
 Each packet consists of 4 bits opcode and payload. The maximum size of USB packet is is 64 bytes.
 
 ## Ping request
-The ping request has length of 16 bits with opcode `1`, user defined version starting from `0` up to `255` and a random payload. Below is the representation of the request in little-endian byte order:
-|Payload 4 bits|Version 8 bits|Opcode 4 bits|
+The request has length of 16 bits (2 bytes) with 4 bits of opcode `1`, 4 bits of random payload and 8 bits of user defined version starting from `0` up to `255`. Below is the representation of the request in little-endian byte order with payload `15` and version `1`:
+|Version 8 bits|Payload 4 bits|Opcode 4 bits|
 | --- | --- | --- |
-|1111|0000 0001|0001|
+|0000 0001|1111|0001|
 
 ## Pong response
-The pong response has length of 16 bits with opcode `1`, requested version incremented by 1 and requested payload. Below is the representation of the request in little-endian byte order:
-|Payload 4 bits|Version 8 bits|Opcode 4 bits|
+The response has length of 16 bits (2 bytes) with 4 bits of opcode `1`, 4 bits of requested payload and 8 bits of requested version incremented by 1. Below is the representation of the response in little-endian byte order with payload `15` and version `2`:
+|Version 8 bits|Payload 4 bits|Opcode 4 bits|
 | --- | --- | --- |
-|1111|0000 0010|0001|
+|0000 0010|1111|0001|
 
-## Led test request
-The led test request has length of 8 bits with opcode `2` and led state in 5th bit. If the state bit is set the led will be turned on, otherwise it'll be turned off. This request does not return any response. Below is the representation of the request in little-endian byte order:
+## Status led test request
+The request has length of 8 bits (1 byte) with 4 bits of opcode `2` and 1 bit of led state located in 5th bit. If the state bit is set the led will be turned on, otherwise it'll be turned off. This request does not return any response. Below is the representation of the request in little-endian byte order which turns on status led:
 |Flags 4 bits|Opcode 4 bits|
 | --- | --- |
 |0001|0010|
+
+## Set parameter request
+The request has length of 24 bits (3 bytes) with 4 bits of opcode `3`, 4 bits of parameter index starting from `0` up to `12` and 16 bits of parameter value. This request does not return any response. Below is the representation of the request in little-endian byte order which sets parameter at index `0` with value `21845`:
+|Parameter value 16 bit|Index 4 bits|Opcode 4 bits|
+| --- | --- | --- |
+|0101 0101 0101 0101|0000|0011|
+
+# Supported parameters map
+The decoder is able to decode 12 parameters described in the table below with assigned indexes:
+|Index|Parameter name|Size|
+| --- | --- | --- |
+|1|Latitude hi|16 bits|
+|2|Latitude lo|16 bits|
+|3|Longitude hi|16 bits|
+|4|Longitude lo|16 bits|
+|5|Altitude hi|16 bits|
+|6|Heading|16 bits|
+|7|Pitch|16 bits|
+|8|Roll|16 bits|
+|9|Gear front|16 bits|
+|10|Gear left|16 bits|
+|11|Gear right|16 bits|
+|12|Flags|16 bits|
 
 # Build firmware binary
 Here we build the firmware binary and then create `.bin` file which we can upload directly to the MCU.
