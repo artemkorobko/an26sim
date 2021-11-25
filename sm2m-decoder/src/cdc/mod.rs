@@ -1,3 +1,3 @@
 pub mod device;
-pub mod request;
-pub mod response;
+pub mod inbound;
+pub mod outbound;

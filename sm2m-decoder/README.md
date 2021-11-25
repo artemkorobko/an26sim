@@ -8,43 +8,64 @@ You can find more information in the official RTIC book https://rtic.rs/0.5/book
 ![High level design](design.svg)
 
 # Communication protocol
-Each packet consists of 4 bits opcode and payload. The maximum size of USB packet is is 64 bytes.
+Each packet consists of 4 bits opcode and payload. The maximum size of USB packet is is 64 bytes. Sending some of the request inbound packets obligates host side to receive response outbound packets. The may have different opcodes compared to inbound.
 
-## Ping request
-The request has length of 16 bits (2 bytes) with 4 bits of opcode `1`, 4 bits of random payload and 8 bits of user defined version starting from `0` up to `255`. A host can expect pong response sent from the device. Below is the representation of the request in little-endian byte order with payload `15` and version `1`:
+## Common error
+The protocol has common error outbound packets that can be sent from the device to the host in response for some command. This outbound packet has length of 8 bits (1 byte) with 4 bits of opcode `1`. The rest 4 bits are either ignored or contain additional error reason depending on the inbound packet. The reason is an integer value between `1` and `15`. Below is the representation of the packet in little-endian byte order with error reason `1`:
+
+|Optional 4 bits reason|Opcode 4 bits|
+| --- | --- |
+|0001|0001|
+
+## Get firmware version
+This inbound packet has length of 8 bits (1 byte) with 4 bits of opcode `1`. The rest 4 bits are ignored. Below is the representation of the packet in little-endian byte order:
+
+|Ignored 4 bits|Opcode 4 bits|
+| --- | --- |
+|0000|0011|
+
+## Firmware version
+This outbound packet has length of 16 bits (2 bytes) with 4 bits of opcode `2`, 4 bits of major version between `1` and `15` and 8 bits of minor version between `0` and `254`. Below is the representation of the packet in little-endian byte order which contains firmware version `1.5`:
+
+|Minor 8 bits|Major 4 bits|Opcode 4 bits|
+| --- | --- | --- |
+|0000 0101|0001|0010|
+
+## Ping
+The request has length of 16 bits (2 bytes) with 4 bits of opcode `2`, 4 bits of random payload and 8 bits of user defined version starting from `0` up to `255`. A host can expect pong response sent from the device. Below is the representation of the request in little-endian byte order with payload `15` and version `1`:
 |Version 8 bits|Payload 4 bits|Opcode 4 bits|
 | --- | --- | --- |
 |0000 0001|1111|0001|
 
 ## Pong response
-The response has length of 16 bits (2 bytes) with 4 bits of opcode `1`, 4 bits of requested payload and 8 bits of requested version incremented by 1. Below is the representation of the response in little-endian byte order with payload `15` and version `2`:
+The response has length of 16 bits (2 bytes) with 4 bits of opcode `3`, 4 bits of requested payload and 8 bits of requested version incremented by 1. Below is the representation of the response in little-endian byte order with payload `15` and version `2`:
 |Version 8 bits|Payload 4 bits|Opcode 4 bits|
 | --- | --- | --- |
-|0000 0010|1111|0001|
+|0000 0010|1111|0011|
 
 ## Status led test request
-The request has length of 8 bits (1 byte) with 4 bits of opcode `2` and 1 bit of led state located in 5th bit. If the state bit is set the led will be turned on, otherwise it'll be turned off. This request does not return any response. Below is the representation of the request in little-endian byte order which turns on status led:
+The request has length of 8 bits (1 byte) with 4 bits of opcode `3` and 1 bit of led state located in 5th bit. If the state bit is set the led will be turned on, otherwise it'll be turned off. This request does not return any response. Below is the representation of the request in little-endian byte order which turns on status led:
 |Flags 4 bits|Opcode 4 bits|
 | --- | --- |
-|0001|0010|
+|0001|0011|
 
 ## Set parameter request
-The request has length of 24 bits (3 bytes) with 4 bits of opcode `3`, 4 bits of parameter index starting from `0` up to `12` and 16 bits of parameter value. This request does not return any response. Below is the representation of the request in little-endian byte order which sets parameter at index `0` with value `21845`:
+The request has length of 24 bits (3 bytes) with 4 bits of opcode `4`, 4 bits of parameter index starting from `0` up to `12` and 16 bits of parameter value. This request does not return any response. Below is the representation of the request in little-endian byte order which sets parameter at index `0` with value `21845`:
 |Parameter value 16 bit|Index 4 bits|Opcode 4 bits|
 | --- | --- | --- |
-|0101 0101 0101 0101|0000|0011|
+|0101 0101 0101 0101|0000|0100|
 
 ## Get parameter request
-The request has length of 8 bits (1 byte) with 4 bits of opcode `4` and 4 bits of parameter index starting from `0` up to `12`. A host can expect parameter response sent from the device. Below is the representation of the request in little-endian byte order which requests parameter at index `0`:
+The request has length of 8 bits (1 byte) with 4 bits of opcode `5` and 4 bits of parameter index starting from `0` up to `12`. A host can expect parameter response sent from the device. Below is the representation of the request in little-endian byte order which requests parameter at index `0`:
 |Index 4 bits|Opcode 4 bits|
 | --- | --- |
-|0000|0100|
+|0000|0101|
 
 ## Parameter response
 The response has length of 24 bits (3 bytes) with 4 bits of opcode `4`, 4 bits of parameter index starting from `0` up to `12` and 16 bits of parameter value. Below is the representation of the response in little-endian byte order with index `0` and value `21845`:
 |Parameter value 16 bit|Index 4 bits|Opcode 4 bits|
 | --- | --- | --- |
-|0101 0101 0101 0101|0000|0011|
+|0101 0101 0101 0101|0000|0100|
 
 # Supported parameters map
 The decoder is able to decode 12 parameters described in the table below with assigned indexes:

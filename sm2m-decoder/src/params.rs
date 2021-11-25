@@ -1,15 +1,8 @@
-const PARAMS_COUNT: usize = 12;
+pub const PARAMS_COUNT: usize = 12;
 
+#[derive(Default)]
 pub struct SM2MParams {
     params: [u16; PARAMS_COUNT],
-}
-
-impl Default for SM2MParams {
-    fn default() -> Self {
-        Self {
-            params: [0u16; PARAMS_COUNT],
-        }
-    }
 }
 
 impl SM2MParams {

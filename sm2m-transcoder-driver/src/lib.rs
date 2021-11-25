@@ -17,7 +17,7 @@ mod tests {
 
     use crate::{
         driver::{USBDevice, USBDriver},
-        protocol::{Request, Response, SM2MDevice},
+        protocol::{SM2MDevice, UsbInPacket, UsbOutPacket},
     };
 
     const IO_TIMEOUT: time::Duration = time::Duration::from_secs(1);
@@ -49,7 +49,21 @@ mod tests {
     }
 
     #[test]
-    fn test_ping() {
+    fn version() {
+        init_logger();
+        let mut decoder = find_decoder_device().expect("No decoder device found");
+        decoder.reset().expect("Error resetting device");
+        let size = decoder
+            .write_packet(UsbInPacket::GetVersion)
+            .expect("Error sending version request");
+        assert_eq!(size, 1);
+        let packet = decoder.read_packet().expect("Error reading pong response");
+        assert_ne!(UsbOutPacket::Unknown, packet);
+        log::info!("Device firmware version: {:?}", packet);
+    }
+
+    #[test]
+    fn ping() {
         init_logger();
         let mut decoder = find_decoder_device().expect("No decoder device found");
         decoder.reset().expect("Error resetting device");
@@ -58,13 +72,14 @@ mod tests {
             let payload = rand::thread_rng().gen_range(5..15);
             log::info!("Send ping request {} with payload {}", version, payload);
             let size = decoder
-                .write_request(Request::Ping(version, payload))
+                .write_packet(UsbInPacket::Ping(version, payload))
                 .expect("Error sending ping request");
             assert_eq!(size, 2);
-            let response = decoder
-                .read_response()
-                .expect("Error reading pong response");
-            assert_eq!(Response::Pong(version.wrapping_add(1), payload), response);
+            let response = decoder.read_packet().expect("Error reading pong response");
+            assert_eq!(
+                UsbOutPacket::Pong(version.wrapping_add(1), payload),
+                response
+            );
         }
     }
 
@@ -74,7 +89,7 @@ mod tests {
         let mut swcoder = find_decoder_device().expect("No decoder device found");
         swcoder.reset().expect("Error resetting device");
         let size = swcoder
-            .write_request(Request::LedOn)
+            .write_packet(UsbInPacket::LedOn)
             .expect("Error sending led on request");
         assert_eq!(size, 1);
     }
@@ -85,13 +100,13 @@ mod tests {
         let mut decoder = find_decoder_device().expect("No decoder device found");
         decoder.reset().expect("Error resetting device");
         let size = decoder
-            .write_request(Request::LedOff)
+            .write_packet(UsbInPacket::LedOff)
             .expect("Error sending led off request");
         assert_eq!(size, 1);
     }
 
     #[test]
-    fn set_get_param() {
+    fn set_param() {
         init_logger();
         let mut decoder = find_decoder_device().expect("No decoder device found");
         decoder.reset().expect("Unable to reset device");
@@ -99,17 +114,15 @@ mod tests {
             let param = rand::thread_rng().gen_range(u16::MIN..u16::MAX);
             log::info!("Sending set param {} with value {}", index, param);
             let size = decoder
-                .write_request(Request::SetParam(index, param))
+                .write_packet(UsbInPacket::SetParam(index, param))
                 .expect("Error sending set param request");
             assert_eq!(size, 3);
             let size = decoder
-                .write_request(Request::GetParam(index))
+                .write_packet(UsbInPacket::GetParam(index))
                 .expect("Error sending get param request");
             assert_eq!(size, 1);
-            let response = decoder
-                .read_response()
-                .expect("Error reading param response");
-            assert_eq!(Response::Param(index, param), response);
+            let response = decoder.read_packet().expect("Error reading param response");
+            assert_eq!(UsbOutPacket::Param(index, param), response);
         }
     }
 
