@@ -1,25 +1,13 @@
 use std::time;
 
-use crate::{device_lookup::DeviceLookup, error::DriverError};
+use crate::error::DriverError;
+
+use super::device_lookup::DeviceLookup;
 
 const VID: u16 = 1155;
 const PID: u16 = 22336;
 
-pub fn find_encoder<T: rusb::UsbContext>(
-    context: &mut T,
-    timeout: time::Duration,
-) -> Result<Option<DeviceLookup<T>>, DriverError> {
-    find_device(context, "SM2M-ENCODER", timeout)
-}
-
-pub fn find_decoder<T: rusb::UsbContext>(
-    context: &mut T,
-    timeout: time::Duration,
-) -> Result<Option<DeviceLookup<T>>, DriverError> {
-    find_device(context, "SM2M-DECODER", timeout)
-}
-
-fn find_device<T: rusb::UsbContext>(
+pub fn find_device<T: rusb::UsbContext>(
     context: &mut T,
     serial_number: &str,
     timeout: time::Duration,

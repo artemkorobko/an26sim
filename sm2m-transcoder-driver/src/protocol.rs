@@ -1,6 +1,6 @@
 use std::time;
 
-use crate::{driver::USBDevice, error::DriverError};
+use crate::{driver::UsbDevice, error::DriverError};
 
 pub enum UsbInPacket {
     GetVersion,
@@ -25,7 +25,7 @@ pub trait SM2MDevice {
     fn read_packet(&mut self) -> Result<UsbOutPacket, DriverError>;
 }
 
-impl SM2MDevice for USBDevice {
+impl SM2MDevice for UsbDevice {
     fn write_packet(&mut self, packet: UsbInPacket) -> Result<usize, DriverError> {
         match packet {
             UsbInPacket::GetVersion => {

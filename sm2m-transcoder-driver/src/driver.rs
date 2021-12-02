@@ -1,14 +1,17 @@
 use std::time;
 
-use crate::{device_lookup::DeviceLookup, device_lookup_helper, error::DriverError};
+use crate::{
+    base::{device_lookup::DeviceLookup, device_lookup_helper},
+    error::DriverError,
+};
 
-pub struct USBDriver {
+pub struct UsbDriver {
     context: rusb::Context,
 }
 
-pub type USBDevice = crate::device::Device<rusb::Context>;
+pub type UsbDevice = crate::base::device::Device<rusb::Context>;
 
-impl USBDriver {
+impl UsbDriver {
     pub fn new() -> Result<Self, DriverError> {
         let context = rusb::Context::new().map_err(DriverError::Init)?;
         Ok(Self { context })
@@ -29,11 +32,12 @@ impl USBDriver {
         )
     }
 
-    pub fn find_encoder(
+    pub fn find_emulator(
         &mut self,
         timeout: time::Duration,
-    ) -> Result<Option<USBDevice>, DriverError> {
-        let device_lookup = device_lookup_helper::find_encoder(&mut self.context, timeout)?;
+    ) -> Result<Option<UsbDevice>, DriverError> {
+        let device_lookup =
+            device_lookup_helper::find_device(&mut self.context, "SM2M-EMULATOR", timeout)?;
         match device_lookup {
             Some(device_lookup) => Ok(Some(Self::create_device(device_lookup)?)),
             None => Ok(None),
@@ -43,8 +47,21 @@ impl USBDriver {
     pub fn find_decoder(
         &mut self,
         timeout: time::Duration,
-    ) -> Result<Option<USBDevice>, DriverError> {
-        let device_lookup = device_lookup_helper::find_decoder(&mut self.context, timeout)?;
+    ) -> Result<Option<UsbDevice>, DriverError> {
+        let device_lookup =
+            device_lookup_helper::find_device(&mut self.context, "SM2M-DECODER", timeout)?;
+        match device_lookup {
+            Some(device_lookup) => Ok(Some(Self::create_device(device_lookup)?)),
+            None => Ok(None),
+        }
+    }
+
+    pub fn find_encoder(
+        &mut self,
+        timeout: time::Duration,
+    ) -> Result<Option<UsbDevice>, DriverError> {
+        let device_lookup =
+            device_lookup_helper::find_device(&mut self.context, "SM2M-ENCODER", timeout)?;
         match device_lookup {
             Some(device_lookup) => Ok(Some(Self::create_device(device_lookup)?)),
             None => Ok(None),
@@ -53,9 +70,9 @@ impl USBDriver {
 
     fn create_device(
         mut device_lookup: DeviceLookup<rusb::Context>,
-    ) -> Result<USBDevice, DriverError> {
+    ) -> Result<UsbDevice, DriverError> {
         let readable_endpoint = device_lookup.find_readable_endpoint()?;
         let writeable_endpoint = device_lookup.find_writeable_endpoint()?;
-        crate::device::Device::from(device_lookup, readable_endpoint, writeable_endpoint)
+        UsbDevice::from(device_lookup, readable_endpoint, writeable_endpoint)
     }
 }

@@ -1,4 +1,4 @@
-use crate::endpoint_lookup::EndpointLookup;
+use super::endpoint_lookup::EndpointLookup;
 
 enum Direction {
     Input,

@@ -1,6 +1,8 @@
 use std::time;
 
-use crate::{device_lookup::DeviceLookup, endpoint_lookup::EndpointLookup, error::DriverError};
+use crate::error::DriverError;
+
+use super::{device_lookup::DeviceLookup, endpoint_lookup::EndpointLookup};
 
 pub struct Device<T: rusb::UsbContext> {
     device: DeviceLookup<T>,

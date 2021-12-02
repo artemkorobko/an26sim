@@ -1,4 +1,6 @@
-use crate::{endpoint_lookup::EndpointLookup, endpoint_lookup_helper, error::DriverError};
+use crate::error::DriverError;
+
+use super::{endpoint_lookup::EndpointLookup, endpoint_lookup_helper};
 
 pub struct DeviceLookup<T: rusb::UsbContext> {
     pub device: rusb::Device<T>,
