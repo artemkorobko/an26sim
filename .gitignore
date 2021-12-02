@@ -1,9 +1,1 @@
-.DS_Store
-sm2m-decoder/target
-sm2m-decoder/flash.sh
-sm2m-transcoder-driver/target
-sm2m-transcoder-driver/Cargo.lock
-xplane-plugin/Resources
-xplane-plugin/target
-xplane-plugin/Cargo.lock
-xplane-plugin/run.sh
+**/.DS_Store
