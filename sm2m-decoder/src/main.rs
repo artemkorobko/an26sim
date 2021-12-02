@@ -2,66 +2,62 @@
 #![no_std]
 
 mod cdc;
-mod led;
 mod params;
-mod params_generator;
 mod setup;
 
 use cortex_m::asm;
-use embedded_hal::digital::v2::OutputPin;
 use panic_halt as _;
-use params_generator::ParamsGenerator;
-use stm32f1xx_hal::gpio;
 
 use cdc::{
     device::CdcDevice,
-    inbound::{PacketReader, UsbInPacket},
-    outbound::{PacketWriter, UsbOutPacket},
+    inbound::{Reader, UsbInbound},
+    outbound::{UsbOutbound, Writer},
 };
-use led::Led;
 use params::SM2MParams;
+use stm32f4xx_hal::{
+    gpio::{gpioa::PA0, gpioc::PC13, Input, Output, PinState, PullUp, PushPull},
+    otg_fs,
+};
 
-#[rtic::app(device = stm32f1xx_hal::pac, peripherals = true, monotonic = rtic::cyccnt::CYCCNT)]
+#[rtic::app(device = stm32f4xx_hal::pac, peripherals = true, monotonic = rtic::cyccnt::CYCCNT)]
 const APP: () = {
     struct Resources {
-        led: Led,
+        led: PC13<Output<PushPull>>,
+        btn: PA0<Input<PullUp>>,
+        usb: CdcDevice,
         params: SM2MParams,
-        params_generator: ParamsGenerator,
-        usb_device: CdcDevice,
     }
 
     #[init]
-    fn init(cx: init::Context) -> init::LateResources {
+    fn init(mut cx: init::Context) -> init::LateResources {
         // Setup MCU
-        let mut peripherals = setup::device(cx.device);
+        setup::core(&mut cx.core);
+        let peripherals = setup::device(cx.device);
 
-        // Configure output LED
-        let led_pin = peripherals
+        // Configure on board peripherals
+        let led = peripherals
             .gpioc
             .pc13
-            .into_push_pull_output_with_state(&mut peripherals.gpioc.crh, gpio::State::High);
-        let led = Led::new(led_pin);
+            .into_push_pull_output_in_state(PinState::High);
+        let btn = peripherals.gpioa.pa0.into_pull_up_input();
 
-        // Configure USB CDC device
-        // BluePill board has a pull-up resistor on the D+ line.
-        // Pull the D+ pin down to send a RESET condition to the USB bus.
-        // This forced reset is needed only for development, without it host
-        // will not reset your device when you upload new firmware.
-        let mut usb_dp = peripherals
-            .gpioa
-            .pa12
-            .into_push_pull_output(&mut peripherals.gpioa.crh);
-        usb_dp.set_low().ok();
-        asm::delay(peripherals.clocks.sysclk().0 / 100);
-        let usb_dp = usb_dp.into_floating_input(&mut peripherals.gpioa.crh);
-        let usb_dm = peripherals.gpioa.pa11;
-        let usb_device = CdcDevice::new(peripherals.usb, usb_dm, usb_dp);
+        // Configure USB
+        let usb_conf = otg_fs::USB {
+            usb_global: peripherals.usb_global,
+            usb_device: peripherals.usb_device,
+            usb_pwrclk: peripherals.usb_pwrclk,
+            pin_dm: peripherals.gpioa.pa11.into_alternate(),
+            pin_dp: peripherals.gpioa.pa12.into_alternate(),
+            hclk: peripherals.clocks.hclk(),
+        };
+
+        let usb = CdcDevice::new(usb_conf);
 
         init::LateResources {
             led,
+            btn,
+            usb,
             params: Default::default(),
-            params_generator: Default::default(),
-            usb_device,
         }
     }
 
@@ -72,68 +68,41 @@ const APP: () = {
         }
     }
 
-    #[task(capacity = 5, resources = [led, params, params_generator, usb_device])]
-    fn handle_usb_inbound(cx: handle_usb_inbound::Context, packet: UsbInPacket) {
-        let mut usb_device = cx.resources.usb_device;
-        match packet {
-            UsbInPacket::GetVersion => {
+    #[task(capacity = 5, resources = [usb])]
+    fn usb_inbound(cx: usb_inbound::Context, inbound: UsbInbound) {
+        let mut usb_device = cx.resources.usb;
+        match inbound {
+            UsbInbound::GetVersion => {
                 let major = env!("CARGO_PKG_VERSION_MAJOR").parse::<u8>().unwrap_or(0);
                 let minor = env!("CARGO_PKG_VERSION_MINOR").parse::<u8>().unwrap_or(0);
-                let response = UsbOutPacket::Version(major, minor);
+                let patch = env!("CARGO_PKG_VERSION_PATCH").parse::<u8>().unwrap_or(0);
+                let outbound = UsbOutbound::Version(major, minor, patch);
                 usb_device.lock(|usb_device| {
-                    write_usb_packet(usb_device, response);
+                    usb_device.write_ex(outbound).ok();
                 });
-            }
-            UsbInPacket::Ping(version, payload) => {
-                let response = UsbOutPacket::Pong(version.wrapping_add(1), payload);
-                usb_device.lock(|usb_device| {
-                    write_usb_packet(usb_device, response);
-                });
-            }
-            UsbInPacket::LedOn => cx.resources.led.on(),
-            UsbInPacket::LedOff => cx.resources.led.off(),
-            UsbInPacket::SetParam(index, param) => {
-                cx.resources.params.set(index as usize, param);
-            }
-            UsbInPacket::GetParam(index) => {
-                if let Some(param) = cx.resources.params.get(index as usize) {
-                    let response = UsbOutPacket::Param(index, param);
-                    usb_device.lock(|usb_device| write_usb_packet(usb_device, response))
-                }
-            }
-            UsbInPacket::EnableParamGenerator(index, period, step) => {
-                cx.resources
-                    .params_generator
-                    .enable(index as usize, period, step);
-            }
-            UsbInPacket::DisableParamGenerator(index) => {
-                cx.resources.params_generator.disable(index as usize);
             }
         };
     }
 
-    #[task(priority = 2, binds = USB_HP_CAN_TX, resources = [usb_device])]
-    fn usb_tx(cx: usb_tx::Context) {
-        cx.resources.usb_device.poll();
+    #[task(priority = 2, binds = OTG_FS, spawn = [usb_inbound], resources = [usb])]
+    fn usb_global(cx: usb_global::Context) {
+        read_usb_packet(cx.resources.usb).and_then(|request| cx.spawn.usb_inbound(request).ok());
     }
 
-    #[task(priority = 2, binds = USB_LP_CAN_RX0, spawn = [handle_usb_inbound], resources = [usb_device])]
-    fn usb_rx0(cx: usb_rx0::Context) {
-        if cx.resources.usb_device.poll() {
-            read_usb_packet(cx.resources.usb_device)
-                .and_then(|request| cx.spawn.handle_usb_inbound(request).ok());
-        }
+    #[task(priority = 2, binds = OTG_FS_WKUP, spawn = [usb_inbound], resources = [usb])]
+    fn usb_wkup(cx: usb_wkup::Context) {
+        read_usb_packet(cx.resources.usb).and_then(|request| cx.spawn.usb_inbound(request).ok());
     }
 
     extern "C" {
-        fn TAMPER();
+        fn TAMP_STAMP();
     }
 };
 
-fn read_usb_packet(device: &mut CdcDevice) -> Option<UsbInPacket> {
-    device.read_packet().unwrap_or(None)
-}
-
-fn write_usb_packet(device: &mut CdcDevice, packet: UsbOutPacket) {
-    device.write_packet(packet).ok();
+fn read_usb_packet(usb: &mut CdcDevice) -> Option<UsbInbound> {
+    if usb.poll() {
+        usb.read_ex().unwrap_or(None)
+    } else {
+        None
+    }
 }

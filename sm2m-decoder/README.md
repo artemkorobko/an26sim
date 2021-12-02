@@ -1,71 +1,104 @@
 # SM2M Decoder
-SM2M Decoder is the decoder of the SM2M computing units signals.
-The firmware is developed for STM32F103 microcontroller.
-It is build using the RTIC - a concurrency framework for building real-time systems.
-You can find more information in the official RTIC book https://rtic.rs/0.5/book/en/.
+SM2M Decoder firmware decodes SM2M computing units signals representing actual aircraft position, orientation and configuration into the acceptable parameters for visualization system. Decoded signals are send to the host machine using USB interface. The target MCU is STM32F411CEU6. This firmware uses RTIC framework. It's a concurrency framework for building real-time systems. You can find more information in the official RTIC book https://rtic.rs/0.5/book/en/.
 
 # High level design
-![High level design](design.svg)
+![High level design](../doc/sm2m-decoder.svg)
+
+# Prerequisities
+## Rust
+- Install Rust toolchain by following the instructions on https://rustup.rs.
+- Install the `rust-std` component `thumbv7em-none-eabihf` to cross-compile for ARM Cortex-M4 MCU using the following command:
+```bash
+rustup target add thumbv7em-none-eabihf
+```
+- Install `cargo-binutils` subcommands to invoke the LLVM tools shipped with the Rust toolchain.
+```bash
+cargo install cargo-binutils 
+```
+- Install `llvm-tools-preview` component for binary inspection.
+```bash
+rustup component add llvm-tools-preview
+```
+
+## ARM gcc extension for Mac
+Before installing extension make sure you have updated [Homebrew](https://brew.sh) packages.
+- Install ARM gcc extension and `dfu-util` which is the host side firmware download/upload utility.
+```bash
+brew install armmbed/formulae/arm-none-eabi-gcc dfu-util
+```
+- Ensure extension has been installed
+```
+arm-none-eabi-gcc -v
+```
+
+## VS Build Tools for Windows
+Download the Visual Studio 2019 Build tools from the Microsoft website: https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16
+
+During installation in the `Workloads` tab select `Desktop development with C++`. Select the following items on the `Installation details` page:
+- MSVC v142 - VS 2019 C++ ...
+- Windows 10 SDK ...
+- C++ CMake tools for Windows
+
+You can find more information about the embedded toolchains here https://docs.rust-embedded.org/book/intro/index.html.
+
+# Build firmware binary
+Here we build the firmware binary and then create `.bin` file which we can upload directly to the MCU.
+```bash
+cargo build --release
+cargo objcopy --release -- -O binary ./target/decoder.bin
+```
+
+# Upload firmware to MCU using DFU
+Before uploading firmware to MCU ensure the size of the firmware can fit in MCU RAM.
+```bash
+cargo size --release
+```
+
+The output will look like this:
+```
+   text    data     bss     dec     hex filename
+   2284       0       4    2288     8f0 sm2m-decoder
+```
+
+**Dec** column represents the total size of the firmware in bytes. This value should be less than 524288 bytes or 512 Kb. In the example above the firmware size is 2288 bytes or 2 Kb.
+
+Before uploading compiled firmware to the MCU it needs to be put into DFU mode. Press and hold `RESET` button. Then press `BOOT0` and release both of them. This sequent will put MCU in DFU mode so the device can be programmed.
+
+To make sure device is attached an ready to be programmed run the following command `dfu-util -l`. The output will look like this:
+```
+Found DFU: [0483:df11] ver=2200, devnum=14, cfg=1, intf=0, path="20-3", alt=3, name="@Device Feature/0xFFFF0000/01*004 e", serial="388535883339"
+Found DFU: [0483:df11] ver=2200, devnum=14, cfg=1, intf=0, path="20-3", alt=2, name="@OTP Memory /0x1FFF7800/01*512 e,01*016 e", serial="388535883339"
+Found DFU: [0483:df11] ver=2200, devnum=14, cfg=1, intf=0, path="20-3", alt=1, name="@Option Bytes  /0x1FFFC000/01*016 e", serial="388535883339"
+Found DFU: [0483:df11] ver=2200, devnum=14, cfg=1, intf=0, path="20-3", alt=0, name="@Internal Flash  /0x08000000/04*016Kg,01*064Kg,03*128Kg", serial="388535883339"
+```
+
+This means that device `0483:df11` is attached and ready to be programmed.
+
+To upload firmware run the following command:
+```bash
+dfu-util -d 0483:df11 -a 0 -s 0x8000000 -D ./target/decoder.bin
+```
+Or invoke `upload.sh` script located in the project root directory.
+
+# STM32F4x1 v2.0+ Pin Layout
+![STM32F4x1 v2.0+ Pin Layout](../doc/STM32F4x1.jpg)
 
 # Communication protocol
-Each packet consists of 4 bits opcode and payload. The maximum size of USB packet is is 64 bytes. Sending some of the request inbound packets obligates host side to receive response outbound packets. The may have different opcodes compared to inbound.
+Each packet consists of 8 bits opcode and optional payload. The maximum size of the packet is 1Kb. Packet received by MCU from host machine is called inbound. Packet sent from host machine to MCU is called outbound. Some of the inbound packets obligates host machine to receive response outbound packets.
 
-## Common error
-The protocol has common error outbound packets that can be sent from the device to the host in response for some command. This outbound packet has length of 8 bits (1 byte) with 4 bits of opcode `1`. The rest 4 bits are either ignored or contain additional error reason depending on the inbound packet. The reason is an integer value between `1` and `15`. Below is the representation of the packet in little-endian byte order with error reason `1`:
+## Inbound: Firmware version
+This inbound packet has length of 8 bits (1 byte) of opcode `1`. Below is the representation of the packet in little-endian byte order:
 
-|Optional 4 bits reason|Opcode 4 bits|
-| --- | --- |
-|0001|0001|
+|Opcode 8 bits|
+| --- |
+|0000 0011|
 
-## Get firmware version
-This inbound packet has length of 8 bits (1 byte) with 4 bits of opcode `1`. The rest 4 bits are ignored. Below is the representation of the packet in little-endian byte order:
+## Outbound: Firmware version
+This outbound packet has length of 32 bits (4 bytes) with opcode `1`, 8 bits of major version with values between `1` and `254`, 8 bits of minor version with values between `0` and `254` and 8 bits of patch version with values between `0` and `254`. Below is the representation of the packet in little-endian byte order which contains firmware version `1.5.8`:
 
-|Ignored 4 bits|Opcode 4 bits|
-| --- | --- |
-|0000|0011|
-
-## Firmware version
-This outbound packet has length of 16 bits (2 bytes) with 4 bits of opcode `2`, 4 bits of major version between `1` and `15` and 8 bits of minor version between `0` and `254`. Below is the representation of the packet in little-endian byte order which contains firmware version `1.5`:
-
-|Minor 8 bits|Major 4 bits|Opcode 4 bits|
-| --- | --- | --- |
-|0000 0101|0001|0010|
-
-## Ping
-The request has length of 16 bits (2 bytes) with 4 bits of opcode `2`, 4 bits of random payload and 8 bits of user defined version starting from `0` up to `255`. A host can expect pong response sent from the device. Below is the representation of the request in little-endian byte order with payload `15` and version `1`:
-|Version 8 bits|Payload 4 bits|Opcode 4 bits|
-| --- | --- | --- |
-|0000 0001|1111|0001|
-
-## Pong response
-The response has length of 16 bits (2 bytes) with 4 bits of opcode `3`, 4 bits of requested payload and 8 bits of requested version incremented by 1. Below is the representation of the response in little-endian byte order with payload `15` and version `2`:
-|Version 8 bits|Payload 4 bits|Opcode 4 bits|
-| --- | --- | --- |
-|0000 0010|1111|0011|
-
-## Status led test request
-The request has length of 8 bits (1 byte) with 4 bits of opcode `3` and 1 bit of led state located in 5th bit. If the state bit is set the led will be turned on, otherwise it'll be turned off. This request does not return any response. Below is the representation of the request in little-endian byte order which turns on status led:
-|Flags 4 bits|Opcode 4 bits|
-| --- | --- |
-|0001|0011|
-
-## Set parameter request
-The request has length of 24 bits (3 bytes) with 4 bits of opcode `4`, 4 bits of parameter index starting from `0` up to `12` and 16 bits of parameter value. This request does not return any response. Below is the representation of the request in little-endian byte order which sets parameter at index `0` with value `21845`:
-|Parameter value 16 bit|Index 4 bits|Opcode 4 bits|
-| --- | --- | --- |
-|0101 0101 0101 0101|0000|0100|
-
-## Get parameter request
-The request has length of 8 bits (1 byte) with 4 bits of opcode `5` and 4 bits of parameter index starting from `0` up to `12`. A host can expect parameter response sent from the device. Below is the representation of the request in little-endian byte order which requests parameter at index `0`:
-|Index 4 bits|Opcode 4 bits|
-| --- | --- |
-|0000|0101|
-
-## Parameter response
-The response has length of 24 bits (3 bytes) with 4 bits of opcode `4`, 4 bits of parameter index starting from `0` up to `12` and 16 bits of parameter value. Below is the representation of the response in little-endian byte order with index `0` and value `21845`:
-|Parameter value 16 bit|Index 4 bits|Opcode 4 bits|
-| --- | --- | --- |
-|0101 0101 0101 0101|0000|0100|
+|Patch 8 bits|Minor 8 bits|Major 8 bits|Opcode 8 bits|
+| --- | --- | --- | --- |
+|0000 1000|0000 0101|0000 0001|0000 0001|
 
 # Supported parameters map
 The decoder is able to decode 12 parameters described in the table below with assigned indexes:
@@ -83,80 +116,3 @@ The decoder is able to decode 12 parameters described in the table below with as
 |10|Gear left|16 bits|
 |11|Gear right|16 bits|
 |12|Flags|16 bits|
-
-# Build firmware binary
-Here we build the firmware binary and then create `.bin` file which we can upload directly to the MCU.
-```bash
-cargo build --release
-cargo objcopy --release -- -O binary ./target/decoder.bin
-```
-
-After uploading the built firmware to the MCU we can check that OS has been detected our device by running the command:
-```bash
-ioreg -p IOUSB -w0 | sed 's/[^o]*o //; s/@.*$//' | grep -v '^Root.*'
-```
-
-We should see `STM32 Virtual ComPort` device in the list.
-
-# Upload firmware to MCU using DFU
-Before uploading firmware to MCU ensure the size of the firmware can fit in MCU RAM.
-```bash
-cargo size --release
-```
-
-The output will look like this:
-```
-    Finished release [optimized] target(s) in 0.04s
-   text    data     bss     dec     hex filename
-  11952       0     776   12728    31b8 sm2m-decoder
-```
-
-**Dec** column represents the total size of the firmware in bytes.
-
-To upload compiled firmware you need to make sure that BOOT0 jumper connects BOOT0 to the 3v3 and BOO1 jumper connects BOOT1 to GND.
-Then connect the board to USB and run the following command:
-```bash
-dfu-util -d 0483:df11 -a 0 -s 0x8000000 -D ./target/decoder.bin
-```
-
-Alternatively you can create the following shell file:
-```bash
-cargo build --release && \
-cargo objcopy --release -- -O binary ./target/decoder.bin && \
-dfu-util -d 0483:df11 -a 0 -s 0x8000000 -D ./target/decoder.bin
-```
-
-_Warning!
-This method may not work on Chinesse made boards.
-Many bluepill boards are know to have a USB pull up resistor with a value far off. It requires to replace the USB DP pull up with the right value. If it's not the case try uploading the firmware using ST-Link V2._
-
-# Upload firmware to MCU using ST-Link V2
-To upload compiled ELF binary wuth ST-Link V2 we use `openocd` utility. The ELF itself contains flash start address so we can simply invoke the following command:
-```bash
-openocd -f ./openocd.cfg -c "init" -c "reset init" -c "flash write_image erase ./target/thumbv7m-none-eabi/release/sm2m-decoder" -c "shutdown"
-```
-
-Alternatively you can create the following shell file:
-```bash
-#!/bin/sh
-
-cargo build --release && \
-openocd -f ./openocd.cfg -c "init" -c "reset init" -c "flash write_image erase ./target/thumbv7m-none-eabi/release/sm2m-decoder" -c "shutdown"
-```
-
-_In case openocd fails to upload the firmware first time try pressing a `Reset` button on the board before openocd start and release it after you see console message `Info : Listening on port 3333 for gdb connections`. Next time you run openocd it should flash the MCU without errors._
-
-_After flashing complete press `Reset` button on the board._
-
-## ST-Link V2 USB debugger to Blue Pill board connection
-The other of pins represents the same order of pins on the Blue Pill board facing MCU and pins down.
-
-| Blue Pill | ST-Link V2 |
-| --- | --- |
-| **V3** red | **3.3V** pin 8 |
-| **IO** brown | **SWDIO** pin 4 |
-| **CLK** white | **SWDCLK** pin 2 |
-| **GND** black | **GND** pin 6 |
-
-# STM32F103C8T6 Blue Pill pin layout
-![STM32F103C8T6 Blue Pill pin layout](STM32F103C8T6-Blue-Pill-pin-layout.gif)

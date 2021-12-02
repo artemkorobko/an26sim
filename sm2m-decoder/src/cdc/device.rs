@@ -1,40 +1,35 @@
 use core::borrow::BorrowMut;
 
-use stm32f1xx_hal::{device, gpio, usb};
-use usb_device::{class_prelude::UsbBusAllocator, prelude::*};
+use stm32f4xx_hal::otg_fs;
+use usb_device::{
+    class_prelude::UsbBusAllocator,
+    device::{UsbDevice, UsbDeviceBuilder, UsbVidPid},
+    UsbError,
+};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
-static mut USB_BUS: Option<UsbBusAllocator<usb::UsbBusType>> = None;
-
 pub struct CdcDevice {
-    usb_dev: UsbDevice<'static, usb::UsbBusType>,
-    serial: SerialPort<'static, usb::UsbBusType>,
+    usb_dev: UsbDevice<'static, otg_fs::UsbBusType>,
+    serial: SerialPort<'static, otg_fs::UsbBusType>,
 }
 
 impl CdcDevice {
-    pub fn new(
-        usb: device::USB,
-        usb_dm: gpio::gpioa::PA11<gpio::Input<gpio::Floating>>,
-        usb_dp: gpio::gpioa::PA12<gpio::Input<gpio::Floating>>,
-    ) -> Self {
-        let peripheral = usb::Peripheral {
-            usb,
-            pin_dm: usb_dm,
-            pin_dp: usb_dp,
+    pub fn new(usb_conf: otg_fs::USB) -> Self {
+        let alloc = unsafe {
+            static mut EP_MEMORY: [u32; 1024] = [0; 1024];
+            static mut USB_BUS: Option<UsbBusAllocator<otg_fs::UsbBusType>> = None;
+            *USB_BUS.borrow_mut() = Some(otg_fs::UsbBus::new(usb_conf, &mut EP_MEMORY));
+            USB_BUS.as_ref().unwrap()
         };
 
-        let (usb_dev, serial) = unsafe {
-            *USB_BUS.borrow_mut() = Some(usb::UsbBus::new(peripheral));
-            let serial = SerialPort::new(USB_BUS.as_ref().unwrap());
-            let usb_dev = UsbDeviceBuilder::new(USB_BUS.as_ref().unwrap(), UsbVidPid(1155, 22336))
-                .manufacturer("STMicroelectronics")
-                .product("STM32 Virtual ComPort")
-                .serial_number("SM2M-DECODER")
-                .device_class(USB_CLASS_CDC)
-                .max_packet_size_0(64)
-                .build();
-            (usb_dev, serial)
-        };
+        let serial = SerialPort::new(alloc);
+        let usb_dev = UsbDeviceBuilder::new(alloc, UsbVidPid(0x0483, 0x5740))
+            .manufacturer("FSElectronics")
+            .product("An26 SM2M decoder")
+            .serial_number("SM2M-DECODER")
+            .device_class(USB_CLASS_CDC)
+            .max_packet_size_0(64)
+            .build();
 
         Self { usb_dev, serial }
     }
@@ -49,5 +44,13 @@ impl CdcDevice {
 
     pub fn write(&mut self, data: &[u8]) -> Result<usize, UsbError> {
         self.serial.write(data)
+    }
+
+    pub fn write_all(&mut self, buf: &[u8]) -> Result<usize, UsbError> {
+        let mut sent = 0;
+        while sent < buf.len() {
+            sent += self.write(buf)?;
+        }
+        Ok(sent)
     }
 }

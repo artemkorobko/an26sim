@@ -1,24 +1,21 @@
 [package]
 name = "sm2m-decoder"
 version = "1.0.0"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 panic-halt = "0.2.0"
 cortex-m = "0.7.3"
 embedded-hal = "0.2.6"
-cortex-m-rtic = "0.5.9"
 usb-device = "0.2.8"
 usbd-serial = "0.1.1"
-stm32f1xx-hal = { version = "0.7.0", features = ["rt", "stm32f103", "stm32-usbd", "medium"] }
+cortex-m-rtic = { version = "0.5.9", default-features = false, features = ["cortex-m-7"] }
+stm32f4xx-hal = { version = "0.10.1", features = ["rt", "stm32f411", "usb_fs"] }
 
 [[bin]]
 name = "sm2m-decoder"
 test = false
 bench = false
-
-[profile.dev]
-opt-level = "s"
 
 [profile.release]
 opt-level = "s"
