@@ -14,11 +14,11 @@ pub struct CdcDevice {
 }
 
 impl CdcDevice {
-    pub fn new(usb_conf: otg_fs::USB) -> Self {
+    pub fn new(conf: otg_fs::USB) -> Self {
         let alloc = unsafe {
             static mut EP_MEMORY: [u32; 1024] = [0; 1024];
             static mut USB_BUS: Option<UsbBusAllocator<otg_fs::UsbBusType>> = None;
-            *USB_BUS.borrow_mut() = Some(otg_fs::UsbBus::new(usb_conf, &mut EP_MEMORY));
+            *USB_BUS.borrow_mut() = Some(otg_fs::UsbBus::new(conf, &mut EP_MEMORY));
             USB_BUS.as_ref().unwrap()
         };
 

@@ -51,12 +51,10 @@ const APP: () = {
             hclk: peripherals.clocks.hclk(),
         };
 
-        let usb = CdcDevice::new(usb_conf);
-
         init::LateResources {
             led,
             btn,
-            usb,
+            usb: CdcDevice::new(usb_conf),
             params: Default::default(),
         }
     }

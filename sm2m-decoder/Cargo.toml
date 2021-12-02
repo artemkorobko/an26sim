@@ -6,7 +6,6 @@ edition = "2021"
 [dependencies]
 panic-halt = "0.2.0"
 cortex-m = "0.7.3"
-embedded-hal = "0.2.6"
 usb-device = "0.2.8"
 usbd-serial = "0.1.1"
 cortex-m-rtic = { version = "0.5.9", default-features = false, features = ["cortex-m-7"] }
