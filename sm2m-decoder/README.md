@@ -80,6 +80,8 @@ dfu-util -d 0483:df11 -a 0 -s 0x8000000 -D ./target/decoder.bin
 ```
 Or invoke `upload.sh` script located in the project root directory.
 
+_After programming complete press `RESET` button on the board to start executing uploaded firmware._
+
 # STM32F4x1 v2.0+ Pin Layout
 ![STM32F4x1 v2.0+ Pin Layout](../doc/STM32F4x1.jpg)
 
@@ -87,32 +89,34 @@ Or invoke `upload.sh` script located in the project root directory.
 Each packet consists of 8 bits opcode and optional payload. The maximum size of the packet is 1Kb. Packet received by MCU from host machine is called inbound. Packet sent from host machine to MCU is called outbound. Some of the inbound packets obligates host machine to receive response outbound packets.
 
 ## Inbound: Firmware version
-This inbound packet has length of 8 bits (1 byte) of opcode `1`. Below is the representation of the packet in little-endian byte order:
+Request firmware version. Packet length is 8 bits (1 byte) with opcode `1`. Below is the representation of the packet in little-endian byte order:
 
 |Opcode 8 bits|
 | --- |
 |0000 0011|
 
 ## Outbound: Firmware version
-This outbound packet has length of 32 bits (4 bytes) with opcode `1`, 8 bits of major version with values between `1` and `254`, 8 bits of minor version with values between `0` and `254` and 8 bits of patch version with values between `0` and `254`. Below is the representation of the packet in little-endian byte order which contains firmware version `1.5.8`:
+Response firmware version. Packet length is 32 bits (4 bytes) with opcode `1`, 8 bits of major version with values between `1` and `254`, 8 bits of minor version with values between `0` and `254` and 8 bits of patch version with values between `0` and `254`. Below is the representation of the packet in little-endian byte order which contains firmware version `1.5.8`:
 
 |Patch 8 bits|Minor 8 bits|Major 8 bits|Opcode 8 bits|
 | --- | --- | --- | --- |
 |0000 1000|0000 0101|0000 0001|0000 0001|
 
 # Supported parameters map
-The decoder is able to decode 12 parameters described in the table below with assigned indexes:
+The decoder is able to decode 255 parameters described in the table below with assigned indexes:
+
 |Index|Parameter name|Size|
 | --- | --- | --- |
-|1|Latitude hi|16 bits|
-|2|Latitude lo|16 bits|
-|3|Longitude hi|16 bits|
-|4|Longitude lo|16 bits|
-|5|Altitude hi|16 bits|
-|6|Heading|16 bits|
-|7|Pitch|16 bits|
-|8|Roll|16 bits|
-|9|Gear front|16 bits|
-|10|Gear left|16 bits|
-|11|Gear right|16 bits|
-|12|Flags|16 bits|
+|0|Latitude hi|16 bits|
+|1|Latitude lo|16 bits|
+|2|Longitude hi|16 bits|
+|3|Longitude lo|16 bits|
+|4|Altitude hi|16 bits|
+|5|Heading|16 bits|
+|6|Pitch|16 bits|
+|7|Roll|16 bits|
+|8|Gear front|16 bits|
+|9|Gear left|16 bits|
+|10|Gear right|16 bits|
+|11|Flags|16 bits|
+|The rest of indexes are reserved|
