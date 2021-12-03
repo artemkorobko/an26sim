@@ -1,5 +1,5 @@
 # SM2M Decoder
-SM2M Decoder firmware decodes SM2M computing units signals representing actual aircraft position, orientation and configuration into the acceptable parameters for visualization system. Decoded signals are send to the host machine using USB interface. The target MCU is STM32F411CEU6. This firmware uses RTIC framework. It's a concurrency framework for building real-time systems. You can find more information in the official RTIC book https://rtic.rs/0.5/book/en/.
+This is the MCU firmware which decodes SM2M computing units signals representing actual aircraft position, orientation and configuration into the appropriate parameters for simulator visualization system. Decoded signals are send to the host machine using USB interface. It uses RTIC framework. It's a concurrency framework for building real-time systems. You can find more information in the official RTIC book https://rtic.rs/0.5/book/en/. The target MCU is [STM32F411CEU6](https://www.st.com/en/microcontrollers-microprocessors/stm32f411ce.html).
 
 # High level design
 ![High level design](../doc/sm2m-decoder.svg)
@@ -60,7 +60,7 @@ The output will look like this:
    2284       0       4    2288     8f0 sm2m-decoder
 ```
 
-**Dec** column represents the total size of the firmware in bytes. This value should be less than 524288 bytes or 512 Kb. In the example above the firmware size is 2288 bytes or 2 Kb.
+**Dec** column represents the total size of the firmware in bytes. This value should be less than 524287 bytes or 512 Kb. In the example above the firmware size is 2288 bytes or 2 Kb.
 
 Before uploading compiled firmware to the MCU it needs to be put into DFU mode. Press and hold `RESET` button. Then press `BOOT0` and release both of them. This sequent will put MCU in DFU mode so the device can be programmed.
 
