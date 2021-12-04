@@ -20,7 +20,7 @@ impl CdcDevice {
         let serial = SerialPort::new(alloc);
         let device = UsbDeviceBuilder::new(alloc, UsbVidPid(0x0483, 0x5740))
             .manufacturer("FSElectronics")
-            .product("An26 SM2M emulator")
+            .product("An26 SM2M Emulator")
             .serial_number("SM2M-EMULATOR")
             .device_class(USB_CLASS_CDC)
             .max_packet_size_0(64)

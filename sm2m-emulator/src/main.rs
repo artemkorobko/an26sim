@@ -2,93 +2,98 @@
 #![no_std]
 
 mod cdc;
+mod data_bus;
 mod generators;
-mod setup;
-mod signals;
 
-use cortex_m::asm;
+use data_bus::DataBus;
 use embedded_hal::digital::v2::OutputPin;
 use generators::Generators;
 use panic_halt as _;
 use rtic::cyccnt::U32Ext;
-use stm32f1xx_hal::{
-    gpio::{self, gpioc::PC13, Output, PushPull},
-    prelude::_embedded_hal_digital_ToggleableOutputPin,
-    time, usb,
-};
+use stm32f1xx_hal::{gpio, prelude::*, time, usb};
 
 use cdc::{
     device::CdcDevice,
     inbound::{Reader, UsbInbound},
     outbound::{UsbOutbound, Writer},
 };
-use signals::SignalsWriter;
 
 #[rtic::app(device = stm32f1xx_hal::pac, peripherals = true, monotonic = rtic::cyccnt::CYCCNT)]
 const APP: () = {
     struct Resources {
         sysclk: time::Hertz,
-        led: PC13<Output<PushPull>>,
-        signals: SignalsWriter,
+        led: gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>,
         generators: Generators,
         usb_device: CdcDevice,
+        data_bus: DataBus,
     }
 
     #[init]
     fn init(mut cx: init::Context) -> init::LateResources {
-        // Setup MCU
-        setup::core(&mut cx.core);
-        let mut peripherals = setup::device(cx.device);
+        // Configure MCU
+        cx.core.DWT.enable_cycle_counter();
+        let mut flash = cx.device.FLASH.constrain();
+        let mut rcc = cx.device.RCC.constrain();
+        cx.device.AFIO.constrain(&mut rcc.apb2);
+        let clocks = rcc
+            .cfgr
+            .use_hse(8.mhz())
+            .sysclk(72.mhz())
+            .pclk1(36.mhz())
+            .freeze(&mut flash.acr);
 
-        // Configure output LED
-        let led = peripherals
-            .gpioc
+        assert!(clocks.usbclk_valid());
+
+        // Configure peripherals
+        let mut gpioa = cx.device.GPIOA.split(&mut rcc.apb2);
+        let gpiob = cx.device.GPIOB.split(&mut rcc.apb2);
+        let mut gpioc = cx.device.GPIOC.split(&mut rcc.apb2);
+
+        let led = gpioc
             .pc13
-            .into_push_pull_output_with_state(&mut peripherals.gpioc.crh, gpio::State::High);
-        let signals = SignalsWriter::new();
+            .into_push_pull_output_with_state(&mut gpioc.crh, gpio::State::High);
 
-        // Configure USB
-        // BluePill board has a pull-up resistor on the D+ line.
-        // Pull the D+ pin down to send a RESET condition to the USB bus.
-        // This forced reset is needed only for development, without it host
-        // will not reset your device when you upload new firmware.
-        let mut usb_dp = peripherals
-            .gpioa
-            .pa12
-            .into_push_pull_output(&mut peripherals.gpioa.crh);
-        usb_dp.set_low().ok();
-        asm::delay(peripherals.clocks.sysclk().0 / 100);
+        let data_bus = DataBus {
+            interrupt: gpioa
+                .pa0
+                .into_push_pull_output_with_state(&mut gpioa.crl, gpio::State::Low),
+            data: gpiob,
+        };
+
         let usb_conf = usb::Peripheral {
-            usb: peripherals.usb,
-            pin_dm: peripherals.gpioa.pa11,
-            pin_dp: usb_dp.into_floating_input(&mut peripherals.gpioa.crh),
+            usb: cx.device.USB,
+            pin_dm: gpioa.pa11,
+            pin_dp: gpioa.pa12.into_floating_input(&mut gpioa.crh),
         };
 
         init::LateResources {
-            sysclk: peripherals.clocks.sysclk(),
+            sysclk: clocks.sysclk(),
             led,
-            signals,
             generators: Default::default(),
             usb_device: CdcDevice::new(usb_conf),
+            data_bus,
         }
     }
 
     #[idle]
     fn idle(_: idle::Context) -> ! {
         loop {
-            asm::wfi();
+            cortex_m::asm::wfi();
         }
     }
 
-    #[task(resources = [sysclk, led, generators, usb_device], schedule = [generate_params])]
-    fn generate_params(cx: generate_params::Context, marker: u16) {
+    #[task(resources = [sysclk, led, generators], schedule = [generate_params])]
+    fn generate_params(cx: generate_params::Context) {
         let generators = cx.resources.generators;
         if generators.enabled() {
             cx.resources.led.toggle().ok();
-            let schedule = (cx.resources.sysclk.0 / generators.fps() as u32).cycles();
-            cx.schedule
-                .generate_params(cx.scheduled + schedule, marker)
-                .ok();
+            // for value in generators.generate() {}
+
+            let delay = (cx.resources.sysclk.0 / generators.fps() as u32).cycles();
+            let schedule = cx.scheduled + delay;
+            cx.schedule.generate_params(schedule).ok();
+        } else {
+            cx.resources.led.set_high().ok();
         }
     }
 
@@ -106,20 +111,18 @@ const APP: () = {
                     device.write_ex(outbound).ok();
                 });
             }
-            UsbInbound::UpdateParam(index, value) => {
-                generators.update_param(index as usize, value);
-            }
-            UsbInbound::EnableGenerator(index, period, step) => {
-                generators.enable_generator(index as usize, period, step);
+            UsbInbound::EnableGenerator(index, period, value, step) => {
+                generators.enable_generator(index as usize, value, period, step);
             }
             UsbInbound::DisableGenerator(index) => {
                 generators.disable_generator(index as usize);
             }
-            UsbInbound::StartGenerator(fps, marker) => {
-                generators.enable(fps);
-                cx.schedule.generate_params(cx.scheduled, marker).ok();
+            UsbInbound::StartProducer(fps) => {
+                if generators.enable(fps) {
+                    cx.schedule.generate_params(cx.scheduled).ok();
+                }
             }
-            UsbInbound::StopGenerator => {
+            UsbInbound::StopProducer => {
                 generators.disable();
             }
         };

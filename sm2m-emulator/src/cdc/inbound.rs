@@ -4,11 +4,10 @@ use super::device::CdcDevice;
 
 pub enum UsbInbound {
     GetVersion,
-    UpdateParam(u8, u16),
-    EnableGenerator(u8, u8, u16),
+    EnableGenerator(u8, u8, u16, u16),
     DisableGenerator(u8),
-    StartGenerator(u8, u16),
-    StopGenerator,
+    StartProducer(u8),
+    StopProducer,
 }
 
 pub trait Reader {
@@ -22,27 +21,21 @@ impl Reader for CdcDevice {
         let opcode = buf[0];
         Ok(match opcode {
             1 => Some(UsbInbound::GetVersion),
-            2 => Some(update_param(&buf)),
-            3 => Some(enable_generator(&buf)),
-            4 => Some(disable_generator(&buf)),
-            5 => Some(start_generator(&buf)),
-            6 => Some(UsbInbound::StopGenerator),
+            2 => Some(enable_generator(&buf)),
+            3 => Some(disable_generator(&buf)),
+            4 => Some(start_producer(&buf)),
+            5 => Some(UsbInbound::StopProducer),
             _ => None,
         })
     }
 }
 
-fn update_param(buf: &[u8]) -> UsbInbound {
-    let index = buf[1];
-    let value = buf[2] as u16 | (buf[3] as u16) << 8;
-    UsbInbound::UpdateParam(index, value)
-}
-
 fn enable_generator(buf: &[u8]) -> UsbInbound {
     let index = buf[1];
     let period = buf[2];
-    let step = buf[3] as u16 | (buf[4] as u16) << 8;
-    UsbInbound::EnableGenerator(index, period, step)
+    let value = buf[3] as u16 | (buf[4] as u16) << 8;
+    let step = buf[5] as u16 | (buf[6] as u16) << 8;
+    UsbInbound::EnableGenerator(index, period, value, step)
 }
 
 fn disable_generator(buf: &[u8]) -> UsbInbound {
@@ -50,8 +43,7 @@ fn disable_generator(buf: &[u8]) -> UsbInbound {
     UsbInbound::DisableGenerator(index)
 }
 
-fn start_generator(buf: &[u8]) -> UsbInbound {
-    let millis = buf[1];
-    let marker = buf[2] as u16 | (buf[3] as u16) << 8;
-    UsbInbound::StartGenerator(millis, marker)
+fn start_producer(buf: &[u8]) -> UsbInbound {
+    let fps = buf[1];
+    UsbInbound::StartProducer(fps)
 }
