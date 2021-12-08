@@ -113,34 +113,7 @@ impl Generators {
         }
     }
 
-    pub fn generate(&mut self) -> GeneratorsIterator {
-        for generator in &mut self.generators {
-            if let Some(generator) = generator {
-                generator.generate();
-            }
-        }
-
-        GeneratorsIterator {
-            generators: &self.generators,
-            index: 0,
-        }
-    }
-}
-
-pub struct GeneratorsIterator<'a> {
-    generators: &'a [Option<Generator>; MAX_PARAMS_COUNT],
-    index: usize,
-}
-
-impl<'a> Iterator for GeneratorsIterator<'a> {
-    type Item = u16;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let generator = &self.generators[self.index];
-        while generator.is_none() && self.index < self.generators.len() {
-            self.index += 1;
-        }
-
-        generator.as_ref().map(|generator| generator.value)
+    pub fn inner_mut(&mut self) -> &mut [Option<Generator>; MAX_PARAMS_COUNT] {
+        &mut self.generators
     }
 }

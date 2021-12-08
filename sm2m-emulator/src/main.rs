@@ -34,7 +34,7 @@ const APP: () = {
         cx.core.DWT.enable_cycle_counter();
         let mut flash = cx.device.FLASH.constrain();
         let mut rcc = cx.device.RCC.constrain();
-        cx.device.AFIO.constrain(&mut rcc.apb2);
+        let mut afio = cx.device.AFIO.constrain(&mut rcc.apb2);
         let clocks = rcc
             .cfgr
             .use_hse(8.mhz())
@@ -46,24 +46,75 @@ const APP: () = {
 
         // Configure peripherals
         let mut gpioa = cx.device.GPIOA.split(&mut rcc.apb2);
-        let gpiob = cx.device.GPIOB.split(&mut rcc.apb2);
+        let mut gpiob = cx.device.GPIOB.split(&mut rcc.apb2);
         let mut gpioc = cx.device.GPIOC.split(&mut rcc.apb2);
 
         let led = gpioc
             .pc13
             .into_push_pull_output_with_state(&mut gpioc.crh, gpio::State::High);
 
+        let (_, pb3, pb4) = afio.mapr.disable_jtag(gpioa.pa15, gpiob.pb3, gpiob.pb4);
         let data_bus = DataBus {
             interrupt: gpioa
                 .pa0
-                .into_push_pull_output_with_state(&mut gpioa.crl, gpio::State::Low),
-            data: gpiob,
+                .into_push_pull_output_with_state(&mut gpioa.crl, gpio::State::High),
+            bit0: gpiob
+                .pb0
+                .into_push_pull_output_with_state(&mut gpiob.crl, gpio::State::High),
+            bit1: gpiob
+                .pb1
+                .into_push_pull_output_with_state(&mut gpiob.crl, gpio::State::High),
+            bit2: gpiob
+                .pb2
+                .into_push_pull_output_with_state(&mut gpiob.crl, gpio::State::High),
+            bit3: pb3.into_push_pull_output_with_state(&mut gpiob.crl, gpio::State::High),
+            bit4: pb4.into_push_pull_output_with_state(&mut gpiob.crl, gpio::State::High),
+            bit5: gpiob
+                .pb5
+                .into_push_pull_output_with_state(&mut gpiob.crl, gpio::State::High),
+            bit6: gpiob
+                .pb6
+                .into_push_pull_output_with_state(&mut gpiob.crl, gpio::State::High),
+            bit7: gpiob
+                .pb7
+                .into_push_pull_output_with_state(&mut gpiob.crl, gpio::State::High),
+            bit8: gpiob
+                .pb8
+                .into_push_pull_output_with_state(&mut gpiob.crh, gpio::State::High),
+            bit9: gpiob
+                .pb9
+                .into_push_pull_output_with_state(&mut gpiob.crh, gpio::State::High),
+            bit10: gpiob
+                .pb10
+                .into_push_pull_output_with_state(&mut gpiob.crh, gpio::State::High),
+            bit11: gpiob
+                .pb11
+                .into_push_pull_output_with_state(&mut gpiob.crh, gpio::State::High),
+            bit12: gpiob
+                .pb12
+                .into_push_pull_output_with_state(&mut gpiob.crh, gpio::State::High),
+            bit13: gpiob
+                .pb13
+                .into_push_pull_output_with_state(&mut gpiob.crh, gpio::State::High),
+            bit14: gpiob
+                .pb14
+                .into_push_pull_output_with_state(&mut gpiob.crh, gpio::State::High),
+            bit15: gpiob
+                .pb15
+                .into_push_pull_output_with_state(&mut gpiob.crh, gpio::State::High),
         };
 
+        // BluePill board has a pull-up resistor on the D+ line.
+        // Pull the D+ pin down to send a RESET condition to the USB bus.
+        // This forced reset is needed only for development, without it host
+        // will not reset your device when you upload new firmware.
+        let mut usb_dp = gpioa.pa12.into_push_pull_output(&mut gpioa.crh);
+        usb_dp.set_low().ok();
+        cortex_m::asm::delay(clocks.sysclk().0 / 100);
         let usb_conf = usb::Peripheral {
             usb: cx.device.USB,
             pin_dm: gpioa.pa11,
-            pin_dp: gpioa.pa12.into_floating_input(&mut gpioa.crh),
+            pin_dp: usb_dp.into_floating_input(&mut gpioa.crh),
         };
 
         init::LateResources {
@@ -82,13 +133,23 @@ const APP: () = {
         }
     }
 
-    #[task(resources = [sysclk, led, generators], schedule = [generate_params])]
+    #[task(resources = [sysclk, led, generators, data_bus], schedule = [generate_params])]
     fn generate_params(cx: generate_params::Context) {
         let generators = cx.resources.generators;
+        let bus = cx.resources.data_bus;
         if generators.enabled() {
-            cx.resources.led.toggle().ok();
-            // for value in generators.generate() {}
+            let gens = generators.inner_mut();
+            for gen in gens {
+                if let Some(generator) = gen {
+                    let value = generator.generate();
+                    bus.write(value);
+                    bus.flush();
+                    cortex_m::asm::delay(15); // 15us
+                    bus.clear();
+                }
+            }
 
+            cx.resources.led.toggle().ok();
             let delay = (cx.resources.sysclk.0 / generators.fps() as u32).cycles();
             let schedule = cx.scheduled + delay;
             cx.schedule.generate_params(schedule).ok();
