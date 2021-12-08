@@ -5,18 +5,20 @@ mod cdc;
 mod data_bus;
 mod generators;
 
-use data_bus::DataBus;
 use embedded_hal::digital::v2::OutputPin;
-use generators::Generators;
 use panic_halt as _;
 use rtic::cyccnt::U32Ext;
 use stm32f1xx_hal::{gpio, prelude::*, time, usb};
 
-use cdc::{
-    device::CdcDevice,
-    inbound::{Reader, UsbInbound},
-    outbound::{UsbOutbound, Writer},
-};
+use cdc::prelude::*;
+use data_bus::DataBus;
+use generators::Generators;
+
+macro_rules! as_output {
+    ($pin:expr, $cr:expr) => {{
+        $pin.into_push_pull_output_with_state($cr, gpio::State::High)
+    }};
+}
 
 #[rtic::app(device = stm32f1xx_hal::pac, peripherals = true, monotonic = rtic::cyccnt::CYCCNT)]
 const APP: () = {
@@ -49,66 +51,34 @@ const APP: () = {
         let mut gpiob = cx.device.GPIOB.split(&mut rcc.apb2);
         let mut gpioc = cx.device.GPIOC.split(&mut rcc.apb2);
 
-        let led = gpioc
-            .pc13
-            .into_push_pull_output_with_state(&mut gpioc.crh, gpio::State::High);
-
+        let led = as_output!(gpioc.pc13, &mut gpioc.crh);
         let (_, pb3, pb4) = afio.mapr.disable_jtag(gpioa.pa15, gpiob.pb3, gpiob.pb4);
+
         let data_bus = DataBus {
-            interrupt: gpioa
-                .pa0
-                .into_push_pull_output_with_state(&mut gpioa.crl, gpio::State::High),
-            bit0: gpiob
-                .pb0
-                .into_push_pull_output_with_state(&mut gpiob.crl, gpio::State::High),
-            bit1: gpiob
-                .pb1
-                .into_push_pull_output_with_state(&mut gpiob.crl, gpio::State::High),
-            bit2: gpiob
-                .pb2
-                .into_push_pull_output_with_state(&mut gpiob.crl, gpio::State::High),
-            bit3: pb3.into_push_pull_output_with_state(&mut gpiob.crl, gpio::State::High),
-            bit4: pb4.into_push_pull_output_with_state(&mut gpiob.crl, gpio::State::High),
-            bit5: gpiob
-                .pb5
-                .into_push_pull_output_with_state(&mut gpiob.crl, gpio::State::High),
-            bit6: gpiob
-                .pb6
-                .into_push_pull_output_with_state(&mut gpiob.crl, gpio::State::High),
-            bit7: gpiob
-                .pb7
-                .into_push_pull_output_with_state(&mut gpiob.crl, gpio::State::High),
-            bit8: gpiob
-                .pb8
-                .into_push_pull_output_with_state(&mut gpiob.crh, gpio::State::High),
-            bit9: gpiob
-                .pb9
-                .into_push_pull_output_with_state(&mut gpiob.crh, gpio::State::High),
-            bit10: gpiob
-                .pb10
-                .into_push_pull_output_with_state(&mut gpiob.crh, gpio::State::High),
-            bit11: gpiob
-                .pb11
-                .into_push_pull_output_with_state(&mut gpiob.crh, gpio::State::High),
-            bit12: gpiob
-                .pb12
-                .into_push_pull_output_with_state(&mut gpiob.crh, gpio::State::High),
-            bit13: gpiob
-                .pb13
-                .into_push_pull_output_with_state(&mut gpiob.crh, gpio::State::High),
-            bit14: gpiob
-                .pb14
-                .into_push_pull_output_with_state(&mut gpiob.crh, gpio::State::High),
-            bit15: gpiob
-                .pb15
-                .into_push_pull_output_with_state(&mut gpiob.crh, gpio::State::High),
+            interrupt: as_output!(gpioa.pa0, &mut gpioa.crl),
+            bit0: as_output!(gpiob.pb0, &mut gpiob.crl),
+            bit1: as_output!(gpiob.pb1, &mut gpiob.crl),
+            bit2: as_output!(gpiob.pb2, &mut gpiob.crl),
+            bit3: as_output!(pb3, &mut gpiob.crl),
+            bit4: as_output!(pb4, &mut gpiob.crl),
+            bit5: as_output!(gpiob.pb5, &mut gpiob.crl),
+            bit6: as_output!(gpiob.pb6, &mut gpiob.crl),
+            bit7: as_output!(gpiob.pb7, &mut gpiob.crl),
+            bit8: as_output!(gpiob.pb8, &mut gpiob.crh),
+            bit9: as_output!(gpiob.pb9, &mut gpiob.crh),
+            bit10: as_output!(gpiob.pb10, &mut gpiob.crh),
+            bit11: as_output!(gpiob.pb11, &mut gpiob.crh),
+            bit12: as_output!(gpiob.pb12, &mut gpiob.crh),
+            bit13: as_output!(gpiob.pb13, &mut gpiob.crh),
+            bit14: as_output!(gpiob.pb14, &mut gpiob.crh),
+            bit15: as_output!(gpiob.pb15, &mut gpiob.crh),
         };
 
         // BluePill board has a pull-up resistor on the D+ line.
         // Pull the D+ pin down to send a RESET condition to the USB bus.
         // This forced reset is needed only for development, without it host
         // will not reset your device when you upload new firmware.
-        let mut usb_dp = gpioa.pa12.into_push_pull_output(&mut gpioa.crh);
+        let mut usb_dp = as_output!(gpioa.pa12, &mut gpioa.crh);
         usb_dp.set_low().ok();
         cortex_m::asm::delay(clocks.sysclk().0 / 100);
         let usb_conf = usb::Peripheral {
