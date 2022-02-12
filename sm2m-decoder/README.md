@@ -1,10 +1,10 @@
 # SM2M Decoder
-This is the MCU firmware which decodes SM2M computing units signals representing actual aircraft position, orientation and configuration into the appropriate parameters for simulator visualization system. Decoded signals are send to the host machine using USB interface. It uses RTIC framework. It's a concurrency framework for building real-time systems. You can find more information in the official RTIC book https://rtic.rs/0.5/book/en/. The target MCU is [STM32F411CEU6](https://www.st.com/en/microcontrollers-microprocessors/stm32f411ce.html).
+This is the MCU firmware which decodes SM2M computing units signals representing actual aircraft position, orientation and configuration into the appropriate parameters for visualization system. Decoded signals are sent to the host machine using USB interface. Targeted MCU is [STM32F411CEU6](https://www.st.com/en/microcontrollers-microprocessors/stm32f411ce.html).
 
 # High level design
 ![High level design](../doc/sm2m-decoder.svg)
 
-# Prerequisities
+# Prerequisites
 ## Rust
 - Install Rust toolchain by following the instructions on https://rustup.rs.
 - Install the `rust-std` component `thumbv7em-none-eabihf` to cross-compile for ARM Cortex-M4 MCU using the following command:

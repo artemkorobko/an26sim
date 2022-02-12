@@ -8,13 +8,22 @@ use usb_device::{
 };
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
-pub struct CdcDevice {
+#[derive(Default)]
+pub struct Descriptor {
+    pub vendor_id: u16,
+    pub product_id: u16,
+    pub manufacturer: &'static str,
+    pub product: &'static str,
+    pub serial_number: &'static str,
+}
+
+pub struct Device {
     usb_dev: UsbDevice<'static, otg_fs::UsbBusType>,
     serial: SerialPort<'static, otg_fs::UsbBusType>,
 }
 
-impl CdcDevice {
-    pub fn new(conf: otg_fs::USB) -> Self {
+impl Device {
+    pub fn new(conf: otg_fs::USB, descriptor: Descriptor) -> Self {
         let alloc = unsafe {
             static mut EP_MEMORY: [u32; 1024] = [0; 1024];
             static mut USB_BUS: Option<UsbBusAllocator<otg_fs::UsbBusType>> = None;
@@ -24,7 +33,7 @@ impl CdcDevice {
 
         let serial = SerialPort::new(alloc);
         let usb_dev = UsbDeviceBuilder::new(alloc, UsbVidPid(0x0483, 0x5740))
-            .manufacturer("FSElectronics")
+            .manufacturer(descriptor.manufacturer)
             .product("An26 SM2M Decoder")
             .serial_number("SM2M-DECODER")
             .device_class(USB_CLASS_CDC)

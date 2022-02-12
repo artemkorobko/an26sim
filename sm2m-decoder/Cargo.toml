@@ -8,8 +8,8 @@ panic-halt = "0.2.0"
 cortex-m = "0.7.3"
 usb-device = "0.2.8"
 usbd-serial = "0.1.1"
-cortex-m-rtic = { version = "0.5.9", default-features = false, features = ["cortex-m-7"] }
-stm32f4xx-hal = { version = "0.10.1", features = ["rt", "stm32f411", "usb_fs"] }
+cortex-m-rtic = "1.0.0"
+stm32f4xx-hal = { version = "0.11.1", features = ["rt", "stm32f411", "usb_fs"] }
 
 [[bin]]
 name = "sm2m-decoder"

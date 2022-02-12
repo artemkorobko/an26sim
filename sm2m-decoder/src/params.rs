@@ -1,25 +1,38 @@
-pub const PARAMS_COUNT: usize = 12;
+const MAX_PARAMS_COUNT: usize = 30;
 
-#[derive(Default)]
-pub struct SM2MParams {
-    params: [u16; PARAMS_COUNT],
+pub struct Params {
+    pub buf: [u16; MAX_PARAMS_COUNT],
+    pub index: usize,
+    pub count: usize,
 }
 
-impl SM2MParams {
-    pub fn set(&mut self, index: usize, value: u16) -> bool {
-        if index < self.params.len() {
-            self.params[index] = value;
-            true
+impl Params {
+    pub fn new(count: usize) -> Self {
+        Self {
+            buf: [0; MAX_PARAMS_COUNT],
+            index: 0,
+            count,
+        }
+    }
+
+    pub fn register(&mut self, param: u16) -> bool {
+        if self.has_capacity() {
+            self.buf[self.index] = param;
+            self.index += 1;
+            self.has_capacity()
         } else {
             false
         }
     }
 
-    pub fn get(&self, index: usize) -> Option<u16> {
-        if index < self.params.len() {
-            Some(self.params[index])
-        } else {
-            None
-        }
+    fn has_capacity(&self) -> bool {
+        self.index < self.count && self.index <= MAX_PARAMS_COUNT
     }
+}
+
+pub enum SM2MParamsState {
+    DetectMarker,
+    DetectParamsCount(usize),
+    WaitForMarker(usize),
+    ReadParams(Params),
 }
