@@ -1,4 +1,4 @@
-const MAX_PARAMS_COUNT: usize = 30;
+pub const MAX_PARAMS_COUNT: usize = 30;
 
 pub struct Params {
     pub buf: [u16; MAX_PARAMS_COUNT],

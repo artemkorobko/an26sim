@@ -32,9 +32,10 @@ impl Device {
         };
 
         let serial = SerialPort::new(alloc);
-        let usb_dev = UsbDeviceBuilder::new(alloc, UsbVidPid(0x0483, 0x5740))
+        let vid_pid = UsbVidPid(descriptor.vendor_id, descriptor.product_id);
+        let usb_dev = UsbDeviceBuilder::new(alloc, vid_pid)
             .manufacturer(descriptor.manufacturer)
-            .product("An26 SM2M Decoder")
+            .product(descriptor.product)
             .serial_number("SM2M-DECODER")
             .device_class(USB_CLASS_CDC)
             .max_packet_size_0(64)

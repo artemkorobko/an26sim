@@ -1,11 +1,11 @@
 use crate::{
-    app::handle_params,
+    app::{handle_param, transfer_params},
     params::{Params, SM2MParamsState},
 };
 
 const START_MARKER_PARAM: u16 = 0x5555;
 
-pub fn handle_params(cx: handle_params::Context, param: u16) {
+pub fn handle_param(cx: handle_param::Context, param: u16) {
     let state = cx.local.state;
     match state {
         SM2MParamsState::DetectMarker => {
@@ -29,7 +29,8 @@ pub fn handle_params(cx: handle_params::Context, param: u16) {
         SM2MParamsState::ReadParams(params) => {
             let completed = !params.register(param);
             if completed {
-                *state = SM2MParamsState::WaitForMarker(params.count)
+                transfer_params::spawn(params.buf).ok();
+                *state = SM2MParamsState::WaitForMarker(params.count);
             }
         }
     }

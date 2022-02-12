@@ -14,7 +14,7 @@ mod app {
 
     use crate::bus;
     use crate::drivers::cdc_acm;
-    use crate::params::SM2MParamsState;
+    use crate::params::{SM2MParamsState, MAX_PARAMS_COUNT};
 
     #[shared]
     struct Shared {
@@ -68,10 +68,10 @@ mod app {
         };
 
         let usb_descr = cdc_acm::Descriptor {
-            vendor_id: todo!(),
-            product_id: todo!(),
-            manufacturer: todo!(),
-            product: todo!(),
+            vendor_id: 0x0483,
+            product_id: 0x5740,
+            manufacturer: "FSElectronics",
+            product: "An26 SM2M Decoder",
             serial_number: todo!(),
         };
 
@@ -126,8 +126,10 @@ mod app {
     use crate::tasks::*;
 
     extern "Rust" {
-        #[task(priority = 1, local = [state])]
-        fn handle_params(cx: handle_params::Context, params: u16);
+        #[task(local = [state])]
+        fn handle_param(cx: handle_param::Context, param: u16);
+        #[task(shared = [usb])]
+        fn transfer_params(cx: transfer_params::Context, params: [u16; MAX_PARAMS_COUNT]);
         #[task(priority = 2, binds = OTG_FS, shared = [usb])]
         fn usb_global(cx: usb_global::Context);
         #[task(priority = 2, binds = OTG_FS_WKUP, shared = [usb])]
