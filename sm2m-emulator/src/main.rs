@@ -1,8 +1,8 @@
 #![no_main]
 #![no_std]
 
+mod bus;
 mod cdc;
-mod data_bus;
 mod generators;
 
 use embedded_hal::digital::v2::OutputPin;
@@ -11,7 +11,6 @@ use rtic::cyccnt::U32Ext;
 use stm32f1xx_hal::{gpio, prelude::*, time, usb};
 
 use cdc::prelude::*;
-use data_bus::DataBus;
 use generators::Generators;
 
 macro_rules! as_output {
@@ -26,17 +25,21 @@ const APP: () = {
         sysclk: time::Hertz,
         led: gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>,
         generators: Generators,
-        usb_device: CdcDevice,
-        data_bus: DataBus,
+        usb: CdcDevice,
+        bus: bus::Interface,
     }
 
     #[init]
-    fn init(mut cx: init::Context) -> init::LateResources {
-        // Configure MCU
-        cx.core.DWT.enable_cycle_counter();
-        let mut flash = cx.device.FLASH.constrain();
-        let mut rcc = cx.device.RCC.constrain();
-        let mut afio = cx.device.AFIO.constrain(&mut rcc.apb2);
+    fn init(cx: init::Context) -> init::LateResources {
+        // Setup MCU
+        let mut cp = cx.core;
+        cp.DWT.enable_cycle_counter();
+
+        // Configure peripherals
+        let mut pac = cx.device;
+        let mut flash = pac.FLASH.constrain();
+        let mut rcc = pac.RCC.constrain();
+        let mut afio = pac.AFIO.constrain(&mut rcc.apb2);
         let clocks = rcc
             .cfgr
             .use_hse(8.mhz())
@@ -46,15 +49,36 @@ const APP: () = {
 
         assert!(clocks.usbclk_valid());
 
-        // Configure peripherals
-        let mut gpioa = cx.device.GPIOA.split(&mut rcc.apb2);
-        let mut gpiob = cx.device.GPIOB.split(&mut rcc.apb2);
-        let mut gpioc = cx.device.GPIOC.split(&mut rcc.apb2);
-
-        let led = as_output!(gpioc.pc13, &mut gpioc.crh);
+        // Disable JTAG
+        let mut gpioa = pac.GPIOA.split(&mut rcc.apb2);
+        let mut gpiob = pac.GPIOB.split(&mut rcc.apb2);
         let (_, pb3, pb4) = afio.mapr.disable_jtag(gpioa.pa15, gpiob.pb3, gpiob.pb4);
 
-        let data_bus = DataBus {
+        // Configure LED
+        let mut gpioc = pac.GPIOC.split(&mut rcc.apb2);
+        let led = as_output!(gpioc.pc13, &mut gpioc.crh);
+
+        // Configure USB
+        // BluePill board has a pull-up resistor on the D+ line.
+        // Pull the D+ pin down to send a RESET condition to the USB bus.
+        // This forced reset is needed only for development, without it host
+        // will not reset your device when you upload new firmware.
+        let mut usb_dp = as_output!(gpioa.pa12, &mut gpioa.crh);
+        usb_dp.set_low().ok();
+        let cpu_cycles_hz = clocks.sysclk().0;
+        cortex_m::asm::delay(cpu_cycles_hz / 100);
+        let usb_conf = usb::Peripheral {
+            usb: pac.USB,
+            pin_dm: gpioa.pa11,
+            pin_dp: usb_dp.into_floating_input(&mut gpioa.crh),
+        };
+
+        let usb = CdcDevice::new(usb_conf);
+
+        // Configure data bus
+        let line_activity = cpu_cycles_hz; // 1 sec
+        let bus = bus::Interface {
+            line_activity,
             interrupt: as_output!(gpioa.pa0, &mut gpioa.crl),
             bit0: as_output!(gpiob.pb0, &mut gpiob.crl),
             bit1: as_output!(gpiob.pb1, &mut gpiob.crl),
@@ -74,25 +98,12 @@ const APP: () = {
             bit15: as_output!(gpiob.pb15, &mut gpiob.crh),
         };
 
-        // BluePill board has a pull-up resistor on the D+ line.
-        // Pull the D+ pin down to send a RESET condition to the USB bus.
-        // This forced reset is needed only for development, without it host
-        // will not reset your device when you upload new firmware.
-        let mut usb_dp = as_output!(gpioa.pa12, &mut gpioa.crh);
-        usb_dp.set_low().ok();
-        cortex_m::asm::delay(clocks.sysclk().0 / 100);
-        let usb_conf = usb::Peripheral {
-            usb: cx.device.USB,
-            pin_dm: gpioa.pa11,
-            pin_dp: usb_dp.into_floating_input(&mut gpioa.crh),
-        };
-
         init::LateResources {
             sysclk: clocks.sysclk(),
             led,
             generators: Default::default(),
-            usb_device: CdcDevice::new(usb_conf),
-            data_bus,
+            usb,
+            bus,
         }
     }
 
@@ -103,19 +114,16 @@ const APP: () = {
         }
     }
 
-    #[task(resources = [sysclk, led, generators, data_bus], schedule = [generate_params])]
+    #[task(resources = [sysclk, led, generators, bus], schedule = [generate_params])]
     fn generate_params(cx: generate_params::Context) {
         let generators = cx.resources.generators;
-        let bus = cx.resources.data_bus;
+        let bus = cx.resources.bus;
         if generators.enabled() {
             let gens = generators.inner_mut();
             for gen in gens {
                 if let Some(generator) = gen {
                     let value = generator.generate();
                     bus.write(value);
-                    bus.flush();
-                    cortex_m::asm::delay(15); // 15us
-                    bus.clear();
                 }
             }
 
@@ -128,9 +136,9 @@ const APP: () = {
         }
     }
 
-    #[task(resources = [generators, usb_device], schedule = [generate_params])]
+    #[task(resources = [generators, usb], schedule = [generate_params])]
     fn handle_usb_inbound(cx: handle_usb_inbound::Context, inbound: UsbInbound) {
-        let mut usb_device = cx.resources.usb_device;
+        let mut usb = cx.resources.usb;
         let generators = cx.resources.generators;
         match inbound {
             UsbInbound::GetVersion => {
@@ -138,7 +146,7 @@ const APP: () = {
                 let minor = env!("CARGO_PKG_VERSION_MINOR").parse::<u8>().unwrap_or(0);
                 let patch = env!("CARGO_PKG_VERSION_PATCH").parse::<u8>().unwrap_or(0);
                 let outbound = UsbOutbound::Version(major, minor, patch);
-                usb_device.lock(|device| {
+                usb.lock(|device| {
                     device.write_ex(outbound).ok();
                 });
             }
@@ -159,17 +167,16 @@ const APP: () = {
         };
     }
 
-    #[task(priority = 2, binds = USB_HP_CAN_TX, resources = [usb_device])]
+    #[task(priority = 2, binds = USB_HP_CAN_TX, resources = [usb])]
     fn usb_tx(cx: usb_tx::Context) {
-        cx.resources.usb_device.poll();
+        cx.resources.usb.poll();
     }
 
-    #[task(priority = 2, binds = USB_LP_CAN_RX0, spawn = [handle_usb_inbound], resources = [usb_device])]
+    #[task(priority = 2, binds = USB_LP_CAN_RX0, spawn = [handle_usb_inbound], resources = [usb])]
     fn usb_rx0(cx: usb_rx0::Context) {
-        let usb_device = cx.resources.usb_device;
-        if usb_device.poll() {
-            usb_device
-                .read_ex()
+        let usb = cx.resources.usb;
+        if usb.poll() {
+            usb.read_ex()
                 .unwrap_or(None)
                 .and_then(|request| cx.spawn.handle_usb_inbound(request).ok());
         }
