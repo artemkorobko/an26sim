@@ -20,7 +20,6 @@ mod app {
 
     #[shared]
     struct Shared {
-        // led: gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>,
         // btn: gpio::gpioa::PA0<gpio::Input<gpio::PullDown>>,
         usb: cdc_acm::Device,
     }
@@ -28,6 +27,7 @@ mod app {
     #[local]
     struct Local {
         state: SM2MParamsState,
+        led: gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>,
         bus_interrupt: gpio::gpioa::PA9<gpio::Input<gpio::PullDown>>,
         bus: bus::DataBus,
     }
@@ -50,10 +50,10 @@ mod app {
             .freeze();
 
         // Configure LED
-        // let gpioc = pac.GPIOC.split();
-        // let led = gpioc
-        //     .pc13
-        //     .into_push_pull_output_in_state(gpio::PinState::High);
+        let gpioc = pac.GPIOC.split();
+        let led = gpioc
+            .pc13
+            .into_push_pull_output_in_state(gpio::PinState::High);
 
         // Configure button
         let gpioa = pac.GPIOA.split();
@@ -109,11 +109,10 @@ mod app {
         bus_interrupt.clear_interrupt_pending_bit();
 
         (
-            Shared {
-                /*led, btn, */ usb,
-            },
+            Shared { /*btn, */ usb },
             Local {
                 state: SM2MParamsState::DetectMarker,
+                led,
                 bus_interrupt,
                 bus,
             },
@@ -131,7 +130,7 @@ mod app {
     use crate::tasks::*;
 
     extern "Rust" {
-        #[task(local = [state])]
+        #[task(local = [state, led])]
         fn handle_param(cx: handle_param::Context, param: u16);
         #[task(shared = [usb])]
         fn transfer_params(

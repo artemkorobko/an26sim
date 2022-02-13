@@ -32,6 +32,7 @@ pub fn handle_param(cx: handle_param::Context, param: u16) {
             let completed = !params.register(param);
             if completed {
                 transfer_params::spawn(params.buf, params.count).ok();
+                cx.local.led.toggle();
                 *state = SM2MParamsState::WaitForMarker(params.count);
             }
         }
