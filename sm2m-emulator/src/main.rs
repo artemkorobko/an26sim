@@ -145,9 +145,9 @@ const APP: () = {
                 let major = env!("CARGO_PKG_VERSION_MAJOR").parse::<u8>().unwrap_or(0);
                 let minor = env!("CARGO_PKG_VERSION_MINOR").parse::<u8>().unwrap_or(0);
                 let patch = env!("CARGO_PKG_VERSION_PATCH").parse::<u8>().unwrap_or(0);
-                let outbound = UsbOutbound::Version(major, minor, patch);
+                let outbound = Outbound::Version(major, minor, patch);
                 usb.lock(|device| {
-                    device.write_ex(outbound).ok();
+                    device.write_outbound(outbound).ok();
                 });
             }
             Inbound::EnableGenerator(index, period, value, step) => {
