@@ -4,6 +4,7 @@
 use panic_halt as _;
 
 mod bus;
+mod device_id;
 mod drivers;
 mod params;
 mod tasks;
@@ -13,13 +14,14 @@ mod app {
     use stm32f4xx_hal::{gpio, otg_fs, prelude::*};
 
     use crate::bus;
+    use crate::device_id;
     use crate::drivers::cdc_acm;
     use crate::params::{SM2MParamsState, MAX_PARAMS_COUNT};
 
     #[shared]
     struct Shared {
-        led: gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>,
-        btn: gpio::gpioa::PA0<gpio::Input<gpio::PullDown>>,
+        // led: gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>,
+        // btn: gpio::gpioa::PA0<gpio::Input<gpio::PullDown>>,
         usb: cdc_acm::Device,
     }
 
@@ -37,7 +39,7 @@ mod app {
         cp.DWT.enable_cycle_counter();
 
         // Configure peripherals
-        let pac = cx.device;
+        let mut pac = cx.device;
         let clocks = pac
             .RCC
             .constrain()
@@ -48,14 +50,14 @@ mod app {
             .freeze();
 
         // Configure LED
-        let gpioc = pac.GPIOC.split();
-        let led = gpioc
-            .pc13
-            .into_push_pull_output_in_state(gpio::PinState::High);
+        // let gpioc = pac.GPIOC.split();
+        // let led = gpioc
+        //     .pc13
+        //     .into_push_pull_output_in_state(gpio::PinState::High);
 
         // Configure button
         let gpioa = pac.GPIOA.split();
-        let btn = gpioa.pa0.into_pull_down_input();
+        // let btn = gpioa.pa0.into_pull_down_input();
 
         // Configure USB
         let usb_conf = otg_fs::USB {
@@ -67,15 +69,16 @@ mod app {
             hclk: clocks.hclk(),
         };
 
-        let usb_descr = cdc_acm::Descriptor {
-            vendor_id: 0x0483,
-            product_id: 0x5740,
-            manufacturer: "FSElectronics",
-            product: "An26 SM2M Decoder",
-            serial_number: todo!(),
-        };
-
-        let usb = cdc_acm::Device::new(usb_conf, usb_descr);
+        let usb = cdc_acm::Device::new(
+            usb_conf,
+            cdc_acm::Descriptor {
+                vendor_id: 0x0483,
+                product_id: 0x5740,
+                manufacturer: "FSElectronics",
+                product: "An26 SM2M Decoder",
+                serial_number: device_id::read_str(),
+            },
+        );
 
         // Configure data bus
         let gpiob = pac.GPIOB.split();
@@ -106,7 +109,9 @@ mod app {
         bus_interrupt.clear_interrupt_pending_bit();
 
         (
-            Shared { led, btn, usb },
+            Shared {
+                /*led, btn, */ usb,
+            },
             Local {
                 state: SM2MParamsState::DetectMarker,
                 bus_interrupt,
@@ -129,7 +134,11 @@ mod app {
         #[task(local = [state])]
         fn handle_param(cx: handle_param::Context, param: u16);
         #[task(shared = [usb])]
-        fn transfer_params(cx: transfer_params::Context, params: [u16; MAX_PARAMS_COUNT]);
+        fn transfer_params(
+            cx: transfer_params::Context,
+            params: [u16; MAX_PARAMS_COUNT],
+            count: usize,
+        );
         #[task(priority = 2, binds = OTG_FS, shared = [usb])]
         fn usb_global(cx: usb_global::Context);
         #[task(priority = 2, binds = OTG_FS_WKUP, shared = [usb])]

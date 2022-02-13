@@ -8,6 +8,8 @@ use usb_device::{
 };
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
+pub const MAX_PACKET_SIZE: u8 = 64;
+
 #[derive(Default)]
 pub struct Descriptor {
     pub vendor_id: u16,
@@ -38,7 +40,7 @@ impl Device {
             .product(descriptor.product)
             .serial_number("SM2M-DECODER")
             .device_class(USB_CLASS_CDC)
-            .max_packet_size_0(64)
+            .max_packet_size_0(MAX_PACKET_SIZE)
             .build();
 
         Self { usb_dev, serial }

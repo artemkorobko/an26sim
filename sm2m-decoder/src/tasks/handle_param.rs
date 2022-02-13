@@ -1,6 +1,6 @@
 use crate::{
     app::{handle_param, transfer_params},
-    params::{Params, SM2MParamsState},
+    params::{Params, SM2MParamsState, MAX_PARAMS_COUNT},
 };
 
 const START_MARKER_PARAM: u16 = 0x5555;
@@ -17,6 +17,8 @@ pub fn handle_param(cx: handle_param::Context, param: u16) {
             let is_not_start_marker = !is_start_marker(param);
             if is_not_start_marker {
                 *count += 1
+            } else if *count > MAX_PARAMS_COUNT {
+                *state = SM2MParamsState::DetectMarker;
             } else {
                 *state = SM2MParamsState::ReadParams(Params::new(*count))
             }
@@ -29,7 +31,7 @@ pub fn handle_param(cx: handle_param::Context, param: u16) {
         SM2MParamsState::ReadParams(params) => {
             let completed = !params.register(param);
             if completed {
-                transfer_params::spawn(params.buf).ok();
+                transfer_params::spawn(params.buf, params.count).ok();
                 *state = SM2MParamsState::WaitForMarker(params.count);
             }
         }
