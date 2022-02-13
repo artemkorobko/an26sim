@@ -137,11 +137,11 @@ const APP: () = {
     }
 
     #[task(resources = [generators, usb], schedule = [generate_params])]
-    fn handle_usb_inbound(cx: handle_usb_inbound::Context, inbound: UsbInbound) {
+    fn handle_usb_inbound(cx: handle_usb_inbound::Context, inbound: Inbound) {
         let mut usb = cx.resources.usb;
         let generators = cx.resources.generators;
         match inbound {
-            UsbInbound::GetVersion => {
+            Inbound::FirmwareVersion => {
                 let major = env!("CARGO_PKG_VERSION_MAJOR").parse::<u8>().unwrap_or(0);
                 let minor = env!("CARGO_PKG_VERSION_MINOR").parse::<u8>().unwrap_or(0);
                 let patch = env!("CARGO_PKG_VERSION_PATCH").parse::<u8>().unwrap_or(0);
@@ -150,18 +150,18 @@ const APP: () = {
                     device.write_ex(outbound).ok();
                 });
             }
-            UsbInbound::EnableGenerator(index, period, value, step) => {
+            Inbound::EnableGenerator(index, period, value, step) => {
                 generators.enable_generator(index as usize, value, period, step);
             }
-            UsbInbound::DisableGenerator(index) => {
+            Inbound::DisableGenerator(index) => {
                 generators.disable_generator(index as usize);
             }
-            UsbInbound::StartProducer(fps) => {
+            Inbound::StartProducer(fps) => {
                 if generators.enable(fps) {
                     cx.schedule.generate_params(cx.scheduled).ok();
                 }
             }
-            UsbInbound::StopProducer => {
+            Inbound::StopProducer => {
                 generators.disable();
             }
         };
@@ -176,7 +176,7 @@ const APP: () = {
     fn usb_rx0(cx: usb_rx0::Context) {
         let usb = cx.resources.usb;
         if usb.poll() {
-            usb.read_ex()
+            usb.read_inbound()
                 .unwrap_or(None)
                 .and_then(|request| cx.spawn.handle_usb_inbound(request).ok());
         }
