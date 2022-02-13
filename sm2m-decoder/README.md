@@ -62,7 +62,7 @@ The output will look like this:
 
 **Dec** column represents the total size of the firmware in bytes. This value should be less than 524287 bytes or 512 Kb. In the example above the firmware size is 2288 bytes or 2 Kb.
 
-Before uploading compiled firmware to the MCU it needs to be put into DFU mode. Press and hold `RESET` button. Then press `BOOT0` and release both buttons. This sequent will put MCU in DFU mode so the device can be programmed.
+Before uploading compiled firmware to the MCU it needs to be put into DFU mode. Press and hold `RESET` button. Then press `BOOT0` and release fist `RESET` and then `BOOT0` buttons. This sequent will put MCU in DFU mode so the device can be programmed.
 
 To make sure device is attached an ready to be programmed run the following command `dfu-util -l`. The output will look like this:
 ```

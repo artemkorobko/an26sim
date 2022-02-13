@@ -34,9 +34,9 @@ pub fn read_str() -> &'static str {
 
     u32_to_hex(id_0, buf);
     buf[8] = b'-';
-    u32_to_hex(id_1, &mut buf[5..]);
+    u32_to_hex(id_1, &mut buf[9..]);
     buf[17] = b'-';
-    u32_to_hex(id_2, &mut buf[10..]);
+    u32_to_hex(id_2, &mut buf[18..]);
 
     unsafe { core::str::from_utf8_unchecked(buf) }
 }

@@ -38,7 +38,7 @@ impl Device {
         let usb_dev = UsbDeviceBuilder::new(alloc, vid_pid)
             .manufacturer(descriptor.manufacturer)
             .product(descriptor.product)
-            .serial_number("SM2M-DECODER")
+            .serial_number(descriptor.serial_number)
             .device_class(USB_CLASS_CDC)
             .max_packet_size_0(MAX_PACKET_SIZE)
             .build();
