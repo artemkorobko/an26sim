@@ -62,7 +62,7 @@ The output will look like this:
 
 **Dec** column represents the total size of the firmware in bytes. This value should be less than 524287 bytes or 512 Kb. In the example above the firmware size is 2288 bytes or 2 Kb.
 
-Before uploading compiled firmware to the MCU it needs to be put into DFU mode. Press and hold `RESET` button. Then press `BOOT0` and release both of them. This sequent will put MCU in DFU mode so the device can be programmed.
+Before uploading compiled firmware to the MCU it needs to be put into DFU mode. Press and hold `RESET` button. Then press `BOOT0` and release both buttons. This sequent will put MCU in DFU mode so the device can be programmed.
 
 To make sure device is attached an ready to be programmed run the following command `dfu-util -l`. The output will look like this:
 ```
@@ -76,9 +76,10 @@ This means that device `0483:df11` is attached and ready to be programmed.
 
 To upload firmware run the following command:
 ```bash
+cargo build --release && \
+cargo objcopy --release -- -O binary ./target/decoder.bin && \
 dfu-util -d 0483:df11 -a 0 -s 0x8000000 -D ./target/decoder.bin
 ```
-Or invoke `upload.sh` script located in the project root directory.
 
 _After programming complete press `RESET` button on the board to start executing uploaded firmware._
 
@@ -86,14 +87,14 @@ _After programming complete press `RESET` button on the board to start executing
 ![STM32F4x1 v2.0+ Pin Layout](../doc/STM32F4x1.jpg)
 
 # Communication protocol
-Each packet consists of 8 bits opcode and optional payload. The maximum size of the packet is 1Kb. Packet received by MCU from host machine is called inbound. Packet sent from host machine to MCU is called outbound. Some of the inbound packets obligates host machine to receive response outbound packets.
+Each packet consists of 8 bits opcode and optional payload. The maximum size of the packet is 64 bytes. Packet received by MCU from host machine is called inbound. Packet sent from host machine to MCU is called outbound. Some of the inbound packets obligates host machine to receive response outbound packets.
 
 ## Inbound: Firmware version
 Request firmware version. Packet length is 8 bits (1 byte) with opcode `1`. Below is the representation of the packet in little-endian byte order:
 
 |Opcode 8 bits|
 | --- |
-|0000 0011|
+|0000 0001|
 
 ## Outbound: Firmware version
 Response firmware version. Packet length is 32 bits (4 bytes) with opcode `1`, 8 bits of major version with values between `1` and `254`, 8 bits of minor version with values between `0` and `254` and 8 bits of patch version with values between `0` and `254`. Below is the representation of the packet in little-endian byte order which contains firmware version `1.5.8`:
@@ -101,6 +102,18 @@ Response firmware version. Packet length is 32 bits (4 bytes) with opcode `1`, 8
 |Patch 8 bits|Minor 8 bits|Major 8 bits|Opcode 8 bits|
 | --- | --- | --- | --- |
 |0000 1000|0000 0101|0000 0001|0000 0001|
+
+## Outbound: Parameters
+Parameters list received from SM2M computing units notification packet. Packet length depends on parameters count with opcode `2` following by the status byte of `0` and one byte of parameters count. Each parameter occupies 16 bits in the packet. Below is the representation of the packet in little-endian byte order which contains one parameter:
+|Parameter|Count|Status|Opcode 8 bits|
+| --- | --- | --- | --- |
+| 0000 0000 0000 1000|0000 0001|0000 0000|0000 0011|
+
+## Outbound: Parameters overflow
+Parameters overflow notification packet. This packet indicated that SM2M sent more parameters that this hardware is capable to receive. Packet length is 2 bytes with opcode `2` following by the status code of `1`. Below is the representation of the packet in little-endian byte order:
+|Status|Opcode 8 bits|
+| --- | --- |
+| 0000 0001|0000 0011|
 
 # Supported parameters map
 The decoder is able to decode 255 parameters described in the table below with assigned indexes:
@@ -119,4 +132,4 @@ The decoder is able to decode 255 parameters described in the table below with a
 |9|Gear left|16 bits|
 |10|Gear right|16 bits|
 |11|Flags|16 bits|
-|The rest of indexes are reserved|
+|The rest is reserved|
