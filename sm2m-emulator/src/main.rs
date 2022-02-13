@@ -2,7 +2,7 @@
 #![no_std]
 
 mod bus;
-mod cdc;
+mod drivers;
 mod generators;
 
 use embedded_hal::digital::v2::OutputPin;
@@ -10,7 +10,7 @@ use panic_halt as _;
 use rtic::cyccnt::U32Ext;
 use stm32f1xx_hal::{gpio, prelude::*, time, usb};
 
-use cdc::prelude::*;
+use drivers::prelude::*;
 use generators::Generators;
 
 macro_rules! as_output {
