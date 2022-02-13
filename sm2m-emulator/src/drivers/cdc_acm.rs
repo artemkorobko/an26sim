@@ -4,12 +4,12 @@ use stm32f1xx_hal::usb;
 use usb_device::{class_prelude::UsbBusAllocator, prelude::*};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
-pub struct CdcDevice {
+pub struct Device {
     device: UsbDevice<'static, usb::UsbBusType>,
     serial: SerialPort<'static, usb::UsbBusType>,
 }
 
-impl CdcDevice {
+impl Device {
     pub fn new(conf: usb::Peripheral) -> Self {
         let alloc = unsafe {
             static mut USB_BUS: Option<UsbBusAllocator<usb::UsbBusType>> = None;

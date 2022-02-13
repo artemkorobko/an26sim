@@ -25,7 +25,7 @@ const APP: () = {
         sysclk: time::Hertz,
         led: gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>,
         generators: Generators,
-        usb: CdcDevice,
+        usb: Device,
         bus: bus::Interface,
     }
 
@@ -73,7 +73,7 @@ const APP: () = {
             pin_dp: usb_dp.into_floating_input(&mut gpioa.crh),
         };
 
-        let usb = CdcDevice::new(usb_conf);
+        let usb = Device::new(usb_conf);
 
         // Configure data bus
         let line_activity = cpu_cycles_hz; // 1 sec

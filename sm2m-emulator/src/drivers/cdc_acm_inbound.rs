@@ -1,6 +1,6 @@
 use usb_device::UsbError;
 
-use super::cdc_acm::CdcDevice;
+use super::cdc_acm::Device;
 
 pub enum UsbInbound {
     GetVersion,
@@ -14,7 +14,7 @@ pub trait Reader {
     fn read_ex(&mut self) -> Result<Option<UsbInbound>, UsbError>;
 }
 
-impl Reader for CdcDevice {
+impl Reader for Device {
     fn read_ex(&mut self) -> Result<Option<UsbInbound>, UsbError> {
         let mut buf = [0u8; 64];
         self.read(&mut buf)?;
