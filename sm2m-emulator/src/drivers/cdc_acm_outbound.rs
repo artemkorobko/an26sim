@@ -1,6 +1,6 @@
 use usb_device::UsbError;
 
-use super::device::CdcDevice;
+use super::cdc_acm::CdcDevice;
 
 pub enum UsbOutbound {
     Version(u8, u8, u8),
