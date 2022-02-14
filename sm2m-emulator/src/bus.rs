@@ -1,4 +1,3 @@
-use embedded_hal::digital::v2::OutputPin;
 use stm32f1xx_hal::{
     gpio::{gpioa, gpiob, Output, PushPull},
     pac,
@@ -29,8 +28,8 @@ impl Interface {
     pub fn write(&mut self, value: u16) {
         // UNSAFE: all pins of PORTB are set to output at this moment
         unsafe { (*pac::GPIOB::ptr()).odr.write(|w| w.bits(value as u32)) };
-        self.interrupt.set_low().ok();
+        self.interrupt.set_low();
         cortex_m::asm::delay(self.line_activity);
-        self.interrupt.set_high().ok();
+        self.interrupt.set_high();
     }
 }
