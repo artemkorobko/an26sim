@@ -4,11 +4,10 @@ use crate::{driver::UsbDevice, error::DriverError};
 
 pub enum Inbound {
     GetVersion,
-    UpdateParam(u8, u16),
-    EnableGenerator(u8, u8, u16),
+    EnableGenerator(u8, u8, u16, u16),
     DisableGenerator(u8),
-    Start(u8, u16),
-    Stop,
+    StartProducer(u8),
+    StopProducer,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -30,15 +29,28 @@ impl EmulatorDevice for UsbDevice {
                 let buf = [1];
                 self.write_all(&buf)
             }
-            Inbound::UpdateParam(_, _) => todo!(),
-            Inbound::EnableGenerator(_, _, _) => todo!(),
-            Inbound::DisableGenerator(_) => todo!(),
-            Inbound::Start(fps, marker) => {
-                let buf = [5, fps, marker as u8, (marker >> 8) as u8];
+            Inbound::EnableGenerator(index, period, value, step) => {
+                let buf = [
+                    2,
+                    index,
+                    period,
+                    value as u8,
+                    (value >> 8) as u8,
+                    step as u8,
+                    (step >> 8) as u8,
+                ];
                 self.write_all(&buf)
             }
-            Inbound::Stop => {
-                let buf = [6];
+            Inbound::DisableGenerator(index) => {
+                let buf = [3, index];
+                self.write_all(&buf)
+            }
+            Inbound::StartProducer(fps) => {
+                let buf = [4, fps];
+                self.write_all(&buf)
+            }
+            Inbound::StopProducer => {
+                let buf = [5];
                 self.write_all(&buf)
             }
         }
@@ -78,32 +90,33 @@ mod tests {
             .write_ex(Inbound::GetVersion)
             .expect("Error sending version request");
         assert_eq!(size, 1);
-        let packet = device
-            .read_ex()
-            .expect("Error reading packet from device");
+        let packet = device.read_ex().expect("Error reading packet from device");
         assert_ne!(packet, Outbound::Unknown);
 
         println!("{:?}", packet);
     }
 
     #[test]
-    fn start() {
+    fn start_producer() {
         let mut device = find_device();
 
         let size = device
-            .write_ex(Inbound::Start(20, 0))
+            .write_ex(Inbound::EnableGenerator(0, 1, 100, 100))
             .expect("Error sending start request");
-
-        assert_eq!(size, 4);
+        assert_eq!(size, 7);
+        let size = device
+            .write_ex(Inbound::StartProducer(20))
+            .expect("Error sending start producer request");
+        assert_eq!(size, 2);
     }
 
     #[test]
-    fn stop() {
+    fn stop_producer() {
         let mut device = find_device();
 
         let size = device
-            .write_ex(Inbound::Stop)
-            .expect("Error sending stop request");
+            .write_ex(Inbound::StopProducer)
+            .expect("Error sending stop producer request");
 
         assert_eq!(size, 1);
     }

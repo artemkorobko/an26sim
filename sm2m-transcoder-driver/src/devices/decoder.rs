@@ -71,8 +71,8 @@ mod tests {
         let mut driver = UsbDriver::new().expect("Error initializing driver");
         let mut device = driver
             .find_decoder(IO_TIMEOUT)
-            .expect("Error finding emulator")
-            .expect("No emulator found");
+            .expect("Error finding decoder")
+            .expect("No decoder found");
         device.reset().expect("Error resetting device");
         device
     }

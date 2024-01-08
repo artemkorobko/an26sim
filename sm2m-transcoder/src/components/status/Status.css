@@ -1,8 +1,0 @@
-.status.ui.grid > .row:first-child {
-  padding-bottom: 0;
-}
-
-.status.ui.grid > .row:not(:first-child) {
-  padding-top: 0;
-  padding-bottom: 0;
-}

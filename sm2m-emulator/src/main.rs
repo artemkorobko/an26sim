@@ -4,7 +4,7 @@
 mod bus;
 mod device_id;
 mod drivers;
-mod generators;
+mod generator;
 mod tasks;
 
 use panic_halt as _;
@@ -13,7 +13,7 @@ use panic_halt as _;
 mod app {
     use stm32f1xx_hal::{gpio, prelude::*, time, usb};
 
-    use crate::{bus, device_id, drivers::cdc_acm, generators::Generators};
+    use crate::{bus, device_id, drivers::cdc_acm};
 
     #[shared]
     struct Shared {
@@ -157,48 +157,4 @@ mod app {
         #[task(binds = USB_LP_CAN_RX0, shared = [usb])]
         fn usb_rx(cx: usb_rx::Context);
     }
-
-    // #[task(resources = [sysclk, led, generators, bus], schedule = [generate_params])]
-    // fn generate_params(cx: generate_params::Context) {
-    //     let generators = cx.resources.generators;
-    //     let bus = cx.resources.bus;
-    //     if generators.enabled() {
-    //         let gens = generators.inner_mut();
-    //         for gen in gens {
-    //             if let Some(generator) = gen {
-    //                 let value = generator.generate();
-    //                 bus.write(value);
-    //             }
-    //         }
-
-    //         cx.resources.led.toggle().ok();
-    //         let delay = (cx.resources.sysclk.0 / generators.fps() as u32).cycles();
-    //         let schedule = cx.scheduled + delay;
-    //         cx.schedule.generate_params(schedule).ok();
-    //     } else {
-    //         cx.resources.led.set_high().ok();
-    //     }
-    // }
-
-    // #[task(resources = [generators, usb], schedule = [generate_params])]
-    // fn handle_usb_inbound(cx: handle_usb_inbound::Context, inbound: Inbound) {
-    //     let mut usb = cx.resources.usb;
-    //     let generators = cx.resources.generators;
-    //     match inbound {
-    //         Inbound::EnableGenerator(index, period, value, step) => {
-    //             generators.enable_generator(index as usize, value, period, step);
-    //         }
-    //         Inbound::DisableGenerator(index) => {
-    //             generators.disable_generator(index as usize);
-    //         }
-    //         Inbound::StartProducer(fps) => {
-    //             if generators.enable(fps) {
-    //                 cx.schedule.generate_params(cx.scheduled).ok();
-    //             }
-    //         }
-    //         Inbound::StopProducer => {
-    //             generators.disable();
-    //         }
-    //     };
-    // }
 }
